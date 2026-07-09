@@ -1,0 +1,32 @@
+# Model weights and exported artifacts
+*.pth
+*.pth.tar
+*.pt
+*.ckpt
+*.onnx
+*.safetensors
+*.downloading
+
+# Training and evaluation outputs
+log/
+logs/
+otherlogs/
+runs/
+save_img/
+outputs/
+events.out.tfevents.*
+
+# Python caches and environments
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+
+# Editor and operating-system files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
