@@ -204,6 +204,87 @@ class HaarWaveletTransform(nn.Module):
         return out_LL, out_LH, out_HL, out_HH
 
 
+HAAR_CODE_BAND_NAMES = {
+    'H': 'LH',
+    'V': 'HL',
+    'D': 'HH',
+}
+
+# This describes the current W8M routing, not the physical Haar response.  The
+# synthetic check below deliberately keeps the two concepts separate so a
+# filter convention change cannot silently swap the scan directions.
+W8M_CURRENT_SCAN_AXIS = {
+    'H': 'horizontal',
+    'V': 'vertical',
+}
+
+
+def check_haar_direction_correspondence(size=32, device='cpu'):
+    """Measure which returned Haar band responds to horizontal/vertical lines.
+
+    The synthetic line is placed at an odd coordinate so a stride-2 Haar
+    window crosses it.  An even-aligned line/edge can fall exactly between
+    windows and incorrectly produce zero high-frequency response.
+    """
+    if size < 4 or size % 2:
+        raise ValueError('size must be an even integer greater than or equal to 4')
+    line_index = size // 2 - 1
+    if line_index % 2 == 0:
+        line_index -= 1
+    device = torch.device(device)
+    haar = HaarWaveletTransform().to(device)
+
+    horizontal_line = torch.zeros(1, 1, size, size, device=device)
+    horizontal_line[:, :, line_index, :] = 1.0
+    vertical_line = torch.zeros(1, 1, size, size, device=device)
+    vertical_line[:, :, :, line_index] = 1.0
+    horizontal_step = torch.zeros(1, 1, size, size, device=device)
+    horizontal_step[:, :, line_index:, :] = 1.0
+    vertical_step = torch.zeros(1, 1, size, size, device=device)
+    vertical_step[:, :, :, line_index:] = 1.0
+
+    def energies(image):
+        _, band_h, band_v, band_d = haar(image)
+        return {
+            'H': float(band_h.abs().sum().item()),
+            'V': float(band_v.abs().sum().item()),
+            'D': float(band_d.abs().sum().item()),
+        }
+
+    responses = {
+        'horizontal_line': energies(horizontal_line),
+        'vertical_line': energies(vertical_line),
+        'horizontal_step': energies(horizontal_step),
+        'vertical_step': energies(vertical_step),
+    }
+    horizontal_band = max(
+        ('H', 'V'), key=lambda band: responses['horizontal_line'][band]
+    )
+    vertical_band = max(
+        ('H', 'V'), key=lambda band: responses['vertical_line'][band]
+    )
+    if horizontal_band == vertical_band:
+        raise AssertionError('Haar direction check did not separate H and V bands')
+    band_response_orientation = {
+        horizontal_band: 'horizontal',
+        vertical_band: 'vertical',
+    }
+    routing_aligned = all(
+        band_response_orientation[band] == W8M_CURRENT_SCAN_AXIS[band]
+        for band in ('H', 'V')
+    )
+    return {
+        'size': size,
+        'line_index': line_index,
+        'code_band_names': dict(HAAR_CODE_BAND_NAMES),
+        'responses': responses,
+        'band_response_orientation': band_response_orientation,
+        'current_scan_axis': dict(W8M_CURRENT_SCAN_AXIS),
+        'routing_aligned': routing_aligned,
+        'recommended_scan_axis': dict(band_response_orientation),
+    }
+
+
 ###反向小波变换######
 class InverseHaarWaveletTransform(nn.Module):
     def __init__(self):

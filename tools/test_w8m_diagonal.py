@@ -12,6 +12,7 @@ from model.DWTFreqNet import (
     DiagonalFourDirectionMamba,
     DiagonalIndexCache,
     WaveletEightDirectionAWGM,
+    check_haar_direction_correspondence,
 )
 
 
@@ -53,6 +54,19 @@ class DiagonalIndexTests(unittest.TestCase):
             permuted = original.index_select(1, cache["idx_" + direction])
             restored = permuted.index_select(1, cache["inv_" + direction])
             self.assertTrue(torch.equal(restored, original))
+
+
+class HaarDirectionCorrespondenceTests(unittest.TestCase):
+    def test_raw_haar_h_v_response_orientation(self):
+        result = check_haar_direction_correspondence(size=32)
+        self.assertEqual(
+            result["band_response_orientation"],
+            {"H": "vertical", "V": "horizontal"},
+        )
+        self.assertEqual(result["responses"]["horizontal_line"]["H"], 0.0)
+        self.assertGreater(result["responses"]["horizontal_line"]["V"], 0.0)
+        self.assertGreater(result["responses"]["vertical_line"]["H"], 0.0)
+        self.assertEqual(result["responses"]["vertical_line"]["V"], 0.0)
 
 
 class SharingAndGradientTests(unittest.TestCase):

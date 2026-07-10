@@ -125,6 +125,18 @@ sharing, route-difference, and shared-gradient tests:
 python tools/test_w8m_diagonal.py
 ```
 
+Verify the physical direction represented by the repository's returned H/V
+Haar bands using synthetic horizontal and vertical lines/edges:
+
+```bash
+python tools/check_haar_direction_mapping.py
+python tools/check_haar_direction_mapping.py --require-aligned-routing
+```
+
+For the current filters, returned `H=LH` responds to vertical structure and
+returned `V=HL` responds to horizontal structure. The strict command exits
+non-zero while W8M still routes H to horizontal scans and V to vertical scans.
+
 Run a W8M smoke test with checkpoint round-trip, FLOPs, latency, FPS, and peak
 GPU-memory reporting:
 

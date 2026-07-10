@@ -154,3 +154,13 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 六个任务均使用 seed 42、batch size 4、patch size 256 和 1000-epoch scheduler。每个任务在 epoch 400 写入 `STAGE1_COMPLETED` 后，由 watcher 自动用同一输出目录的 checkpoint 继续到 epoch 1000；新任务输出目录为 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_stage1_multi/<dataset>/<variant>`，并会继续记录五项性能指标以及方向统计。
 
 重新分配时停止的四个 NUDT 任务只完成了约 16–18 个 epoch，均未到首次评估轮次，不作为最终实验结论；对应目录写入 `STOPPED_DATASET_REALLOCATION` 标记。当前有效运行目录只有上表的六个数据集-变体组合。
+
+## 12. Haar H/V 方向对应检查
+
+使用奇数坐标处的合成单像素水平线、垂直线以及水平/垂直阶跃边缘检查当前 `HaarWaveletTransform`。结果一致为：
+
+- 代码返回的 `H=LH`：垂直线响应 16，水平线响应 0，即实际对应垂直结构；
+- 代码返回的 `V=HL`：水平线响应 16，垂直线响应 0，即实际对应水平结构；
+- 轴对齐合成信号的 `D=HH` 响应为 0。
+
+因此当前 W8M 实现中的 `H -> horizontal scan`、`V -> vertical scan` 与该 Haar 实现的真实方向相反。已增加 `tools/check_haar_direction_mapping.py` 和单元测试；严格模式 `--require-aligned-routing` 会返回非零状态，防止后续在未确认方向路由的情况下静默开展正式实验。当前服务器任务尚未因该发现停止或重启，等待确认是否交换 H/V 扫描路由并从头重跑。

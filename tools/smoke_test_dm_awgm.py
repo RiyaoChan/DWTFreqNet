@@ -17,6 +17,7 @@ from model.DWTFreqNet import (
     DiagonalIndexCache,
     DWTFreqNet,
     WaveletEightDirectionAWGM,
+    check_haar_direction_correspondence,
 )
 
 
@@ -105,6 +106,7 @@ def main():
     args = parse_args()
     device = torch.device(args.device)
     index_tests_passed = validate_diagonal_indices()
+    haar_direction_check = check_haar_direction_correspondence(size=32)
     if device.type == "cuda":
         torch.cuda.reset_peak_memory_stats(device)
     model = DWTFreqNet(
@@ -215,6 +217,7 @@ def main():
         "finite_gradients": finite_gradients,
         "nonzero_mamba_gradient": nonzero_mamba_gradient,
         "diagonal_index_tests": index_tests_passed,
+        "haar_direction_check": haar_direction_check,
         "sharing": sharing,
         "checkpoint_roundtrip": checkpoint_roundtrip,
         "parameters": total_params,
