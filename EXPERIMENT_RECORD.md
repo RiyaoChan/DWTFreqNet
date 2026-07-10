@@ -192,3 +192,7 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 重启前必须同时通过方向严格检查、8 项 W8M 单元测试和真实 CUDA forward/backward smoke test。六项任务统一使用 seed 42、batch size 4、patch size 256、1000-epoch cosine scheduler，并持续记录 mIoU、nIoU、F1、Pd、Fa 与方向门控统计。
 
 上述检查均已通过；真实 CUDA smoke test 使用 `mamba_ssm.Mamba`，验证了有限梯度、非零 Mamba 梯度和 checkpoint round-trip。六项修正版任务于 2026-07-10 15:45:37 CST 启动，启动日志中的 `haar_routing_aligned` 均为 `true`，每卡初始显存约 12.6GB。
+
+## 14. 修正版评估频率调整
+
+新服务器上的 Haar 对齐修正版实验统一从 epoch 100 开始评估，并从原来的每 5 epoch 评估一次改为每个 epoch 都评估一次，即 `--eval-start 100 --eval-every 1`。调整时六项任务均未到首次评估轮次；为保证 `metrics.jsonl`、`run_config.json` 和启动参数不混合两种频率，初始短运行完整归档到 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_haar_aligned_eval5_initial_20260710_154537`，正式目录从 epoch 0 重新启动。归档时 NUAA-SIRST 两项到 epoch 23、NUDT-SIRST 两项到 epoch 7、IRSTD-1K 两项到 epoch 5，均不纳入正式结果。六个正式任务的进程参数与 `run_config.json` 已逐项确认 `eval_start=100`、`eval_every=1`。

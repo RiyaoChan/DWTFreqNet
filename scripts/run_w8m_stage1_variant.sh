@@ -34,7 +34,7 @@ CUDA_VISIBLE_DEVICES="$GPU" PYTHONUNBUFFERED=1 "$PYTHON_BIN" train_one.py \
   --patch-size 256 \
   --workers 0 \
   --eval-start 100 \
-  --eval-every 5 \
+  --eval-every 1 \
   --save-every 20 \
   --threshold 0.5 \
   --seed 42 \

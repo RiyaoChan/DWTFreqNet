@@ -39,7 +39,7 @@ def parse_args():
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--threshold", type=float, default=0.5)
     parser.add_argument("--eval-start", type=int, default=100)
-    parser.add_argument("--eval-every", type=int, default=5)
+    parser.add_argument("--eval-every", type=int, default=1)
     parser.add_argument("--save-every", type=int, default=20)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--resume", default="", help="Checkpoint path, or 'auto'")
