@@ -196,3 +196,9 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 ## 14. 修正版评估频率调整
 
 新服务器上的 Haar 对齐修正版实验统一从 epoch 100 开始评估，并从原来的每 5 epoch 评估一次改为每个 epoch 都评估一次，即 `--eval-start 100 --eval-every 1`。调整时六项任务均未到首次评估轮次；为保证 `metrics.jsonl`、`run_config.json` 和启动参数不混合两种频率，初始短运行完整归档到 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_haar_aligned_eval5_initial_20260710_154537`，正式目录从 epoch 0 重新启动。归档时 NUAA-SIRST 两项到 epoch 23、NUDT-SIRST 两项到 epoch 7、IRSTD-1K 两项到 epoch 5，均不纳入正式结果。六个正式任务的进程参数与 `run_config.json` 已逐项确认 `eval_start=100`、`eval_every=1`。
+
+## 15. 旧服务器跨数据集 DM-AWGM 消融动态队列
+
+旧服务器上已有 NUDT-SIRST 的 `dm_awgm_no_mamba`、`dm_awgm_no_dcn`、`dm_awgm_conv_only` 消融。新增 NUAA-SIRST 和 IRSTD-1K 的同三项消融，共 6 个新实验。使用 `scripts/schedule_dm_awgm_ablation_idle_gpus.sh` 动态检查 GPU 显存和利用率：仅当显存不超过 2GB 且 GPU 利用率不超过 5% 时占用该卡；当前任务完成释放 GPU 后，队列自动启动下一项，不固定绑定 GPU 0/2，也不抢占已有实验。每项使用 batch size 4、patch size 256、seed 42、1000 epoch，并从 epoch 100 开始每 5 epoch 评估一次。
+
+队列于 2026-07-10 23:31:17 CST 启动，首批为 GPU 0 的 NUAA `dm_awgm_no_mamba` 和 GPU 2 的 NUAA `dm_awgm_no_dcn`。此前 23:29 的一次启动尝试因旧服务器 `train_one.py` 不支持 `--stop-after-epoch` 而在参数解析阶段退出，没有产生训练指标，目录已归档至 `/DATA20T/bip/cry/code/DWTFreqNet_DM_AWGM/runs/ablation_two_datasets_failed_stop_after_20260710_232919`。
