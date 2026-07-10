@@ -210,12 +210,12 @@ HAAR_CODE_BAND_NAMES = {
     'D': 'HH',
 }
 
-# This describes the current W8M routing, not the physical Haar response.  The
-# synthetic check below deliberately keeps the two concepts separate so a
-# filter convention change cannot silently swap the scan directions.
+# This describes the physical scan assigned to each returned band.  The
+# synthetic check below keeps filter response and routing separate so a future
+# Haar convention change cannot silently swap the scan directions.
 W8M_CURRENT_SCAN_AXIS = {
-    'H': 'horizontal',
-    'V': 'vertical',
+    'H': 'vertical',
+    'V': 'horizontal',
 }
 
 
@@ -582,13 +582,17 @@ class DirectionMatchedAWGM(nn.Module):
             self.dcn_backend = "not_requested"
 
         self.fusion = DirectionFusionGate(in_channels)
+        self.band_scan_axis = dict(W8M_CURRENT_SCAN_AXIS)
         self.last_direction_weights = None
         self.last_attention_map = None
         self.last_branch_norms = None
 
     def forward(self, A, H, V, D):
-        FH = self.h_branch(self.pre_h(A + H))
-        FV = self.v_branch(self.pre_v(A + V))
+        # In this repository H=LH responds to vertical structure, while V=HL
+        # responds to horizontal structure.  Preserve H/V fusion ordering but
+        # match each raw band to its physical scan axis.
+        FH = self.v_branch(self.pre_h(A + H))
+        FV = self.h_branch(self.pre_v(A + V))
         FD = self.d_branch(self.pre_d(A + D))
         attention, direction_weights = self.fusion(A, FH, FV, FD)
         if not self.training:
@@ -715,6 +719,7 @@ class AxialFourDirectionMamba(nn.Module):
         self.dim = dim
         self.share_mode = share_mode
         self.use_direction_embedding = use_direction_embedding
+        self.band_scan_axis = dict(W8M_CURRENT_SCAN_AXIS)
         self.norm_h = nn.LayerNorm(dim)
         self.norm_v = nn.LayerNorm(dim)
         self.proj_h = nn.Linear(dim, dim)
@@ -924,6 +929,7 @@ class WaveletEightDirectionAWGM(nn.Module):
         self.diag_directions = diag_directions
         self.diag_order = diag_order
         self.use_direction_embedding = use_direction_embedding
+        self.band_scan_axis = dict(W8M_CURRENT_SCAN_AXIS)
         self.pre_h = nn.Conv2d(in_channels, in_channels, 1)
         self.pre_v = nn.Conv2d(in_channels, in_channels, 1)
         self.pre_d = nn.Conv2d(in_channels, in_channels, 1)
@@ -971,9 +977,12 @@ class WaveletEightDirectionAWGM(nn.Module):
         self.last_branch_norms = None
 
     def forward(self, A, H, V, D):
-        FH, FV = self.axial_branch(
-            self.pre_h(A + H),
+        # AxialFourDirectionMamba expects (horizontal_scan_input,
+        # vertical_scan_input).  V=HL is the horizontal-structure band and
+        # H=LH is the vertical-structure band for the Haar kernels above.
+        FV, FH = self.axial_branch(
             self.pre_v(A + V),
+            self.pre_h(A + H),
         )
         FD = self.diagonal_branch(self.pre_d(A + D))
         attention, direction_weights = self.fusion(A, FH, FV, FD)
@@ -1159,6 +1168,7 @@ class DWTFreqNet(nn.Module):
             self.awgm_backends = {
                 "mamba": self.wave_att_input_t.mamba_backend,
                 "dcn": self.wave_att_input_t.dcn_backend,
+                "haar_band_scan_axis": self.wave_att_input_t.band_scan_axis,
             }
             if isinstance(self.wave_att_input_t, WaveletEightDirectionAWGM):
                 self.awgm_backends.update({
@@ -1170,6 +1180,9 @@ class DWTFreqNet(nn.Module):
                     ),
                     "mamba_instances_per_awgm": (
                         self.wave_att_input_t.mamba_instance_count
+                    ),
+                    "haar_routing_aligned": (
+                        check_haar_direction_correspondence()["routing_aligned"]
                     ),
                 })
         else:

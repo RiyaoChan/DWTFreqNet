@@ -134,8 +134,9 @@ python tools/check_haar_direction_mapping.py --require-aligned-routing
 ```
 
 For the current filters, returned `H=LH` responds to vertical structure and
-returned `V=HL` responds to horizontal structure. The strict command exits
-non-zero while W8M still routes H to horizontal scans and V to vertical scans.
+returned `V=HL` responds to horizontal structure. W8M therefore routes H to
+the TB/BT vertical scans and V to the LR/RL horizontal scans. The strict
+command exits non-zero if a later filter or routing change breaks this match.
 
 Run a W8M smoke test with checkpoint round-trip, FLOPs, latency, FPS, and peak
 GPU-memory reporting:

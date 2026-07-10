@@ -1,4 +1,5 @@
 import unittest
+from unittest import mock
 import sys
 from pathlib import Path
 
@@ -67,6 +68,44 @@ class HaarDirectionCorrespondenceTests(unittest.TestCase):
         self.assertGreater(result["responses"]["horizontal_line"]["V"], 0.0)
         self.assertGreater(result["responses"]["vertical_line"]["H"], 0.0)
         self.assertEqual(result["responses"]["vertical_line"]["V"], 0.0)
+        self.assertTrue(result["routing_aligned"])
+
+    def test_w8m_routes_v_to_horizontal_and_h_to_vertical(self):
+        # Force the lightweight mixer so this CPU unit test behaves the same
+        # whether or not the host has the CUDA-only mamba_ssm backend installed.
+        with mock.patch(
+            "model.DWTFreqNet._build_mamba_mixer",
+            side_effect=lambda dim, allow_fallback=False: (
+                CumulativeMixer(dim),
+                "test_mixer",
+            ),
+        ):
+            module = WaveletEightDirectionAWGM(
+                4, share_mode="all_shared_1", allow_fallback=True
+            )
+        A = torch.randn(2, 4, 8, 8)
+        H = torch.randn(2, 4, 8, 8)
+        V = torch.randn(2, 4, 8, 8)
+        D = torch.randn(2, 4, 8, 8)
+        expected_horizontal_input = module.pre_v(A + V).detach()
+        expected_vertical_input = module.pre_h(A + H).detach()
+        captured = {}
+
+        def capture_inputs(_module, inputs):
+            captured["horizontal"] = inputs[0].detach()
+            captured["vertical"] = inputs[1].detach()
+
+        handle = module.axial_branch.register_forward_pre_hook(capture_inputs)
+        try:
+            module(A, H, V, D)
+        finally:
+            handle.remove()
+        self.assertTrue(
+            torch.allclose(captured["horizontal"], expected_horizontal_input)
+        )
+        self.assertTrue(
+            torch.allclose(captured["vertical"], expected_vertical_input)
+        )
 
 
 class SharingAndGradientTests(unittest.TestCase):

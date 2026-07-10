@@ -163,4 +163,32 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 - 代码返回的 `V=HL`：水平线响应 16，垂直线响应 0，即实际对应水平结构；
 - 轴对齐合成信号的 `D=HH` 响应为 0。
 
-因此当前 W8M 实现中的 `H -> horizontal scan`、`V -> vertical scan` 与该 Haar 实现的真实方向相反。已增加 `tools/check_haar_direction_mapping.py` 和单元测试；严格模式 `--require-aligned-routing` 会返回非零状态，防止后续在未确认方向路由的情况下静默开展正式实验。当前服务器任务尚未因该发现停止或重启，等待确认是否交换 H/V 扫描路由并从头重跑。
+原 W8M 实现中的 `H -> horizontal scan`、`V -> vertical scan` 与该 Haar 实现的真实方向相反。现已修正为 `H=LH -> TB/BT vertical scan`、`V=HL -> LR/RL horizontal scan`，而 H/V 在融合器中的槽位与 DWT/IDWT 参数顺序均保持不变。`tools/check_haar_direction_mapping.py --require-aligned-routing` 与路由输入捕获单元测试共同防止后续滤波器或路由变化再次静默交换方向。
+
+## 13. Haar 对齐修正版重启
+
+2026-07-10 按要求停止新服务器上此前采用反向 H/V 扫描对应关系的六个 W8M 任务。旧目录、日志和 checkpoint 全部保留，并写入 `INVALID_HV_SCAN_ROUTING` 标记；这些运行只可作为错误路由对照，不纳入正式结果。修正版使用全新输出根目录 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_haar_aligned_full`，所有任务从 epoch 0 开始直接训练到 epoch 1000，不从旧 checkpoint 恢复：
+
+旧任务停止快照如下（Fa 以 `×10^-6` 表示，全部为无效路由结果）：
+
+| 数据集 | 变体 | 停止 epoch | 最佳 epoch | mIoU (%) | nIoU (%) | F1 (%) | Pd (%) | Fa |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUDT-SIRST | `w8m_diag4_subband_shared` | 186 | 175 | 90.6536 | 91.3422 | 95.0977 | 99.0476 | 11.9037 |
+| NUDT-SIRST | `w8m_diag4_axial_diag_shared` | 183 | 175 | 92.8789 | 92.8863 | 96.3080 | 99.2593 | 4.7569 |
+| NUAA-SIRST | `w8m_diag4_subband_shared` | 505 | 495 | 78.3510 | 78.8973 | 87.8616 | 95.8015 | 14.4748 |
+| NUAA-SIRST | `w8m_diag4_axial_diag_shared` | 499 | 435 | 77.4831 | 78.6239 | 87.3132 | 96.5649 | 19.8256 |
+| IRSTD-1K | `w8m_diag4_subband_shared` | 137 | 105 | 61.4813 | 61.3829 | 76.1466 | 90.2357 | 21.9393 |
+| IRSTD-1K | `w8m_diag4_axial_diag_shared` | 137 | 135 | 64.7704 | 61.5094 | 78.6190 | 89.5623 | 42.1894 |
+
+| GPU | 数据集 | 变体 |
+|---:|---|---|
+| 0 | NUDT-SIRST | `w8m_diag4_subband_shared` |
+| 1 | NUDT-SIRST | `w8m_diag4_axial_diag_shared` |
+| 2 | NUAA-SIRST | `w8m_diag4_subband_shared` |
+| 3 | NUAA-SIRST | `w8m_diag4_axial_diag_shared` |
+| 4 | IRSTD-1K | `w8m_diag4_subband_shared` |
+| 5 | IRSTD-1K | `w8m_diag4_axial_diag_shared` |
+
+重启前必须同时通过方向严格检查、8 项 W8M 单元测试和真实 CUDA forward/backward smoke test。六项任务统一使用 seed 42、batch size 4、patch size 256、1000-epoch cosine scheduler，并持续记录 mIoU、nIoU、F1、Pd、Fa 与方向门控统计。
+
+上述检查均已通过；真实 CUDA smoke test 使用 `mamba_ssm.Mamba`，验证了有限梯度、非零 Mamba 梯度和 checkpoint round-trip。六项修正版任务于 2026-07-10 15:45:37 CST 启动，启动日志中的 `haar_routing_aligned` 均为 `true`，每卡初始显存约 12.6GB。
