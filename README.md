@@ -134,9 +134,10 @@ python tools/smoke_test_dm_awgm.py \
   --batch-size 1
 ```
 
-For NUDT-SIRST Stage 1, the launcher starts prioritized 400-epoch screening
-runs while keeping the cosine scheduler configured for 1000 epochs. Selected
-variants can therefore resume from epoch 400 without changing the LR schedule:
+The Stage 1 launcher uses epoch 400 as a midpoint checkpoint while keeping the
+cosine scheduler configured for 1000 epochs. The current three-dataset schedule
+keeps all six selected runs and automatically resumes each one from epoch 400
+to epoch 1000 without changing the LR schedule:
 
 ```bash
 PROJECT=/path/to/DWTFreqNet \
@@ -149,7 +150,7 @@ To place the same Stage 1 variant on a specific dataset/GPU:
 
 ```bash
 bash scripts/run_w8m_stage1_dataset.sh \
-  NUAA-SIRST w8m_diag4_subband_shared 0 400
+  NUAA-SIRST w8m_diag4_subband_shared 0 1000
 ```
 
 The server-side baseline, full, ablation, and pretrained-weight evaluation
