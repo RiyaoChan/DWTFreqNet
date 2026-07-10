@@ -145,6 +145,13 @@ DATASET_DIR=/path/to/datasets \
 bash scripts/launch_w8m_stage1.sh 0 1 2
 ```
 
+To place the same Stage 1 variant on a specific dataset/GPU:
+
+```bash
+bash scripts/run_w8m_stage1_dataset.sh \
+  NUAA-SIRST w8m_diag4_subband_shared 0 400
+```
+
 The server-side baseline, full, ablation, and pretrained-weight evaluation
 results are summarized in [EXPERIMENT_RECORD.md](EXPERIMENT_RECORD.md).
 

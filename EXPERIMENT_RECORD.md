@@ -137,3 +137,18 @@ Stage 1 于 2026-07-10 11:49 CST 启动。所有任务使用 NUDT-SIRST、seed 4
 | 5 | `w8m_diag4_independent` | — |
 
 运行输出：`/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_stage1_nudt/<variant>`；队列日志：`/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_stage1_nudt/queues/gpu_<id>.log`。当前六个首批任务均已进入训练，单卡占用约 12.3–12.7GB。
+
+## 11. 多数据集调度修正
+
+根据实验执行要求，Stage 1 已从“六个 NUDT 变体”修正为“三个数据集各两个优先变体”。保留 NUDT 的两个任务，停止另外四个尚未到首次评估的 NUDT 任务，并重新分配如下：
+
+| GPU | 数据集 | 变体 |
+|---:|---|---|
+| 0 | NUDT-SIRST | `w8m_diag4_subband_shared` |
+| 1 | NUDT-SIRST | `w8m_diag4_axial_diag_shared` |
+| 2 | NUAA-SIRST | `w8m_diag4_subband_shared` |
+| 3 | NUAA-SIRST | `w8m_diag4_axial_diag_shared` |
+| 4 | IRSTD-1K | `w8m_diag4_subband_shared` |
+| 5 | IRSTD-1K | `w8m_diag4_axial_diag_shared` |
+
+六个任务均使用 seed 42、batch size 4、patch size 256、1000-epoch scheduler 和 epoch 400 Stage 1 边界。新任务输出目录为 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_stage1_multi/<dataset>/<variant>`，并会继续记录五项性能指标以及方向统计。
