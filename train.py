@@ -11,7 +11,7 @@ from metrics import *
 from utils import *
 import model.Config as config
 from torch.utils.tensorboard import SummaryWriter
-from model.DWTFreqNet import DWTFreqNet as DWTFreqNet
+from model.DWTFreqNet import AWGM_VARIANTS, DWTFreqNet
 
 parser = argparse.ArgumentParser(description="PyTorch BasicIRSTD train")
 parser.add_argument("--model_names", default=['DWTFreqNet'], type=list, help="'ACM', 'ALCNet', 'DNANet', 'ISNet', 'UIUNet', 'RDIAN', 'RISTDnet'")
@@ -37,13 +37,7 @@ parser.add_argument(
     "--awgm_variant",
     type=str,
     default="awgm_original",
-    choices=[
-        "awgm_original",
-        "dm_awgm_full",
-        "dm_awgm_no_mamba",
-        "dm_awgm_no_dcn",
-        "dm_awgm_conv_only",
-    ],
+    choices=AWGM_VARIANTS,
 )
 parser.add_argument("--awgm_allow_fallback", action="store_true")
 

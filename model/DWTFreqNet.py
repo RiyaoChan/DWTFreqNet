@@ -40,7 +40,53 @@ AWGM_VARIANTS = (
     'dm_awgm_no_mamba',
     'dm_awgm_no_dcn',
     'dm_awgm_conv_only',
+    'w8m_diag2_subband_shared',
+    'w8m_diag4_independent',
+    'w8m_diag4_pair_shared',
+    'w8m_diag4_subband_shared',
+    'w8m_diag4_axial_diag_shared',
+    'w8m_diag4_axial_diag_shared_dir_embed',
+    'w8m_diag4_all_shared',
 )
+
+
+W8M_VARIANT_CONFIGS = {
+    'w8m_diag2_subband_shared': {
+        'share_mode': 'subband_shared_3',
+        'diag_directions': 2,
+        'use_direction_embedding': False,
+    },
+    'w8m_diag4_independent': {
+        'share_mode': 'independent_8',
+        'diag_directions': 4,
+        'use_direction_embedding': False,
+    },
+    'w8m_diag4_pair_shared': {
+        'share_mode': 'pair_shared_4',
+        'diag_directions': 4,
+        'use_direction_embedding': False,
+    },
+    'w8m_diag4_subband_shared': {
+        'share_mode': 'subband_shared_3',
+        'diag_directions': 4,
+        'use_direction_embedding': False,
+    },
+    'w8m_diag4_axial_diag_shared': {
+        'share_mode': 'axial_diag_shared_2',
+        'diag_directions': 4,
+        'use_direction_embedding': False,
+    },
+    'w8m_diag4_axial_diag_shared_dir_embed': {
+        'share_mode': 'axial_diag_shared_2',
+        'diag_directions': 4,
+        'use_direction_embedding': True,
+    },
+    'w8m_diag4_all_shared': {
+        'share_mode': 'all_shared_1',
+        'diag_directions': 4,
+        'use_direction_embedding': False,
+    },
+}
 
 
 def get_DWTFreqNet_config():
@@ -457,6 +503,7 @@ class DirectionMatchedAWGM(nn.Module):
         self.fusion = DirectionFusionGate(in_channels)
         self.last_direction_weights = None
         self.last_attention_map = None
+        self.last_branch_norms = None
 
     def forward(self, A, H, V, D):
         FH = self.h_branch(self.pre_h(A + H))
@@ -466,6 +513,399 @@ class DirectionMatchedAWGM(nn.Module):
         if not self.training:
             self.last_direction_weights = direction_weights.detach()
             self.last_attention_map = attention.detach()
+            self.last_branch_norms = {
+                'axial': 0.5 * (
+                    FH.detach().float().square().mean().sqrt().item()
+                    + FV.detach().float().square().mean().sqrt().item()
+                ),
+                'diagonal': FD.detach().float().square().mean().sqrt().item(),
+            }
+        return A * attention + A
+
+
+def _build_mamba_mixer(dim, allow_fallback=False):
+    if Mamba is None:
+        if not allow_fallback:
+            raise RuntimeError(
+                "W8M requires mamba_ssm.Mamba. Install mamba_ssm or enable "
+                "fallback for smoke tests only."
+            )
+        module = FallbackSequenceMixer(dim)
+        backend = "fallback_mlp"
+    else:
+        module = Mamba(d_model=dim)
+        for child in module.modules():
+            child._skip_external_init = True
+        backend = "mamba_ssm.Mamba"
+    return module, backend
+
+
+def inverse_permutation(index):
+    inverse = torch.empty_like(index)
+    inverse[index] = torch.arange(index.numel(), device=index.device)
+    return inverse
+
+
+class DiagonalIndexCache:
+    """Build and cache diagonal permutations on the target device."""
+
+    _cache = {}
+
+    @staticmethod
+    def _walk(height, width, row, column, row_step, column_step):
+        diagonal = []
+        while 0 <= row < height and 0 <= column < width:
+            diagonal.append(row * width + column)
+            row += row_step
+            column += column_step
+        return diagonal
+
+    @classmethod
+    def _nwse_groups(cls, height, width):
+        starts = [(0, column) for column in range(width)]
+        starts.extend((row, 0) for row in range(1, height))
+        return [
+            cls._walk(height, width, row, column, 1, 1)
+            for row, column in starts
+        ]
+
+    @classmethod
+    def _nesw_groups(cls, height, width):
+        starts = [(0, column) for column in range(width - 1, -1, -1)]
+        starts.extend((row, width - 1) for row in range(1, height))
+        return [
+            cls._walk(height, width, row, column, 1, -1)
+            for row, column in starts
+        ]
+
+    @staticmethod
+    def _flatten_groups(groups, order):
+        if order == 'concat':
+            return [position for diagonal in groups for position in diagonal]
+        if order == 'snake':
+            return [
+                position
+                for diagonal_index, diagonal in enumerate(groups)
+                for position in (
+                    diagonal if diagonal_index % 2 == 0 else reversed(diagonal)
+                )
+            ]
+        raise ValueError("diag_order must be 'concat' or 'snake'")
+
+    @classmethod
+    def build(cls, height, width, order='snake', device=None):
+        if height <= 0 or width <= 0:
+            raise ValueError('height and width must be positive')
+        device = torch.device('cpu' if device is None else device)
+        key = (height, width, order, device.type, device.index)
+        cached = cls._cache.get(key)
+        if cached is not None:
+            return cached
+
+        nwse = cls._flatten_groups(cls._nwse_groups(height, width), order)
+        nesw = cls._flatten_groups(cls._nesw_groups(height, width), order)
+        indices = {
+            'nwse': torch.tensor(nwse, dtype=torch.long, device=device),
+            'senw': torch.tensor(list(reversed(nwse)), dtype=torch.long, device=device),
+            'nesw': torch.tensor(nesw, dtype=torch.long, device=device),
+            'swne': torch.tensor(list(reversed(nesw)), dtype=torch.long, device=device),
+        }
+        cached = {}
+        for direction, index in indices.items():
+            cached['idx_' + direction] = index
+            cached['inv_' + direction] = inverse_permutation(index)
+        cls._cache[key] = cached
+        return cached
+
+
+class AxialFourDirectionMamba(nn.Module):
+    DIRECTIONS = ('lr', 'rl', 'tb', 'bt')
+
+    def __init__(
+        self,
+        dim,
+        share_mode='subband_shared_3',
+        use_direction_embedding=False,
+        allow_fallback=False,
+        shared_mamba=None,
+        shared_backend=None,
+    ):
+        super().__init__()
+        self.dim = dim
+        self.share_mode = share_mode
+        self.use_direction_embedding = use_direction_embedding
+        self.norm_h = nn.LayerNorm(dim)
+        self.norm_v = nn.LayerNorm(dim)
+        self.proj_h = nn.Linear(dim, dim)
+        self.proj_v = nn.Linear(dim, dim)
+        self.direction_embedding = None
+        if use_direction_embedding:
+            self.direction_embedding = nn.Parameter(torch.empty(4, 1, dim))
+            nn.init.normal_(self.direction_embedding, std=0.02)
+
+        def new_mamba():
+            return _build_mamba_mixer(dim, allow_fallback)
+
+        if share_mode == 'independent_8':
+            self.mamba_lr, self.backend = new_mamba()
+            self.mamba_rl, _ = new_mamba()
+            self.mamba_tb, _ = new_mamba()
+            self.mamba_bt, _ = new_mamba()
+            names = {direction: 'mamba_' + direction for direction in self.DIRECTIONS}
+        elif share_mode in ('pair_shared_4', 'subband_shared_3'):
+            self.h_mamba, self.backend = new_mamba()
+            self.v_mamba, _ = new_mamba()
+            names = {'lr': 'h_mamba', 'rl': 'h_mamba',
+                     'tb': 'v_mamba', 'bt': 'v_mamba'}
+        elif share_mode == 'axial_diag_shared_2':
+            self.axial_mamba, self.backend = new_mamba()
+            names = {direction: 'axial_mamba' for direction in self.DIRECTIONS}
+        elif share_mode == 'all_shared_1':
+            if shared_mamba is None:
+                raise ValueError('all_shared_1 requires a shared_mamba')
+            self.shared_mamba = shared_mamba
+            self.backend = shared_backend or 'shared'
+            names = {direction: 'shared_mamba' for direction in self.DIRECTIONS}
+        else:
+            raise ValueError('Unsupported W8M share mode: {}'.format(share_mode))
+        self._direction_to_module_name = names
+
+    def get_mamba(self, direction):
+        if direction not in self.DIRECTIONS:
+            raise KeyError(direction)
+        return getattr(self, self._direction_to_module_name[direction])
+
+    def _add_direction_embedding(self, sequence, direction):
+        if self.direction_embedding is None:
+            return sequence
+        index = self.DIRECTIONS.index(direction)
+        return sequence + self.direction_embedding[index]
+
+    def _run(self, sequence, direction, norm):
+        sequence = self._add_direction_embedding(norm(sequence), direction)
+        return self.get_mamba(direction)(sequence)
+
+    def forward(self, horizontal, vertical, return_routes=False):
+        batch, channels, height, width = horizontal.shape
+        if vertical.shape != horizontal.shape:
+            raise ValueError('Horizontal and vertical branch shapes must match')
+
+        h_sequence = horizontal.permute(0, 2, 3, 1).reshape(
+            batch * height, width, channels
+        )
+        route_lr = self._run(h_sequence, 'lr', self.norm_h)
+        route_rl = torch.flip(
+            self._run(torch.flip(h_sequence, dims=[1]), 'rl', self.norm_h),
+            dims=[1],
+        )
+        h_output = self.proj_h(0.5 * (route_lr + route_rl))
+        h_output = h_output.reshape(batch, height, width, channels)
+        h_output = h_output.permute(0, 3, 1, 2).contiguous()
+
+        v_sequence = vertical.permute(0, 3, 2, 1).reshape(
+            batch * width, height, channels
+        )
+        route_tb = self._run(v_sequence, 'tb', self.norm_v)
+        route_bt = torch.flip(
+            self._run(torch.flip(v_sequence, dims=[1]), 'bt', self.norm_v),
+            dims=[1],
+        )
+        v_output = self.proj_v(0.5 * (route_tb + route_bt))
+        v_output = v_output.reshape(batch, width, height, channels)
+        v_output = v_output.permute(0, 3, 2, 1).contiguous()
+
+        outputs = (horizontal + h_output, vertical + v_output)
+        if not return_routes:
+            return outputs
+        return outputs + ({
+            'lr': route_lr,
+            'rl': route_rl,
+            'tb': route_tb,
+            'bt': route_bt,
+        },)
+
+
+class DiagonalFourDirectionMamba(nn.Module):
+    ALL_DIRECTIONS = ('nwse', 'senw', 'nesw', 'swne')
+
+    def __init__(
+        self,
+        dim,
+        share_mode='subband_shared_3',
+        diag_directions=4,
+        diag_order='snake',
+        use_direction_embedding=False,
+        allow_fallback=False,
+        shared_mamba=None,
+        shared_backend=None,
+    ):
+        super().__init__()
+        if diag_directions not in (2, 4):
+            raise ValueError('diag_directions must be 2 or 4')
+        if diag_order not in ('concat', 'snake'):
+            raise ValueError("diag_order must be 'concat' or 'snake'")
+        self.dim = dim
+        self.share_mode = share_mode
+        self.diag_directions = diag_directions
+        self.diag_order = diag_order
+        self.directions = self.ALL_DIRECTIONS[:diag_directions]
+        self.norm = nn.LayerNorm(dim)
+        self.proj = nn.Linear(dim, dim)
+        self.direction_embedding = None
+        if use_direction_embedding:
+            self.direction_embedding = nn.Parameter(torch.empty(4, 1, dim))
+            nn.init.normal_(self.direction_embedding, std=0.02)
+
+        def new_mamba():
+            return _build_mamba_mixer(dim, allow_fallback)
+
+        if share_mode == 'independent_8':
+            for direction in self.directions:
+                module, backend = new_mamba()
+                setattr(self, 'mamba_' + direction, module)
+                self.backend = backend
+            names = {direction: 'mamba_' + direction for direction in self.directions}
+        elif share_mode == 'pair_shared_4':
+            self.diag_backslash_mamba, self.backend = new_mamba()
+            names = {'nwse': 'diag_backslash_mamba',
+                     'senw': 'diag_backslash_mamba'}
+            if diag_directions == 4:
+                self.diag_slash_mamba, _ = new_mamba()
+                names.update({'nesw': 'diag_slash_mamba',
+                              'swne': 'diag_slash_mamba'})
+        elif share_mode in ('subband_shared_3', 'axial_diag_shared_2'):
+            self.diag_mamba, self.backend = new_mamba()
+            names = {direction: 'diag_mamba' for direction in self.directions}
+        elif share_mode == 'all_shared_1':
+            if shared_mamba is None:
+                raise ValueError('all_shared_1 requires a shared_mamba')
+            self.shared_mamba = shared_mamba
+            self.backend = shared_backend or 'shared'
+            names = {direction: 'shared_mamba' for direction in self.directions}
+        else:
+            raise ValueError('Unsupported W8M share mode: {}'.format(share_mode))
+        self._direction_to_module_name = names
+
+    def get_mamba(self, direction):
+        if direction not in self.directions:
+            raise KeyError(direction)
+        return getattr(self, self._direction_to_module_name[direction])
+
+    def _add_direction_embedding(self, sequence, direction):
+        if self.direction_embedding is None:
+            return sequence
+        index = self.ALL_DIRECTIONS.index(direction)
+        return sequence + self.direction_embedding[index]
+
+    def forward(self, x, return_routes=False):
+        batch, channels, height, width = x.shape
+        flat = x.flatten(2).transpose(1, 2)
+        permutations = DiagonalIndexCache.build(
+            height, width, order=self.diag_order, device=x.device
+        )
+        restored_routes = {}
+        for direction in self.directions:
+            sequence = flat.index_select(1, permutations['idx_' + direction])
+            sequence = self._add_direction_embedding(self.norm(sequence), direction)
+            output = self.get_mamba(direction)(sequence)
+            restored_routes[direction] = output.index_select(
+                1, permutations['inv_' + direction]
+            )
+
+        fused = torch.stack(
+            [restored_routes[direction] for direction in self.directions], dim=0
+        ).mean(dim=0)
+        fused = self.proj(fused)
+        fused = fused.transpose(1, 2).reshape(batch, channels, height, width)
+        output = x + fused
+        if return_routes:
+            return output, restored_routes
+        return output
+
+
+class WaveletEightDirectionAWGM(nn.Module):
+    """Wavelet-aligned axial and diagonal Mamba guidance (W8M-AWGM)."""
+
+    def __init__(
+        self,
+        in_channels,
+        share_mode='subband_shared_3',
+        diag_directions=4,
+        diag_order='snake',
+        use_direction_embedding=False,
+        fusion='spatial_softmax',
+        allow_fallback=False,
+    ):
+        super().__init__()
+        if fusion != 'spatial_softmax':
+            raise ValueError("Only fusion='spatial_softmax' is currently supported")
+        self.share_mode = share_mode
+        self.diag_directions = diag_directions
+        self.diag_order = diag_order
+        self.use_direction_embedding = use_direction_embedding
+        self.pre_h = nn.Conv2d(in_channels, in_channels, 1)
+        self.pre_v = nn.Conv2d(in_channels, in_channels, 1)
+        self.pre_d = nn.Conv2d(in_channels, in_channels, 1)
+
+        shared_mamba = None
+        shared_backend = None
+        if share_mode == 'all_shared_1':
+            shared_mamba, shared_backend = _build_mamba_mixer(
+                in_channels, allow_fallback
+            )
+            self.shared_mamba = shared_mamba
+
+        self.axial_branch = AxialFourDirectionMamba(
+            in_channels,
+            share_mode=share_mode,
+            use_direction_embedding=use_direction_embedding,
+            allow_fallback=allow_fallback,
+            shared_mamba=shared_mamba,
+            shared_backend=shared_backend,
+        )
+        self.diagonal_branch = DiagonalFourDirectionMamba(
+            in_channels,
+            share_mode=share_mode,
+            diag_directions=diag_directions,
+            diag_order=diag_order,
+            use_direction_embedding=use_direction_embedding,
+            allow_fallback=allow_fallback,
+            shared_mamba=shared_mamba,
+            shared_backend=shared_backend,
+        )
+        self.fusion = DirectionFusionGate(in_channels)
+        self.mamba_backend = self.axial_branch.backend
+        self.dcn_backend = 'not_requested'
+        mixers = [
+            self.axial_branch.get_mamba(direction)
+            for direction in self.axial_branch.DIRECTIONS
+        ]
+        mixers.extend(
+            self.diagonal_branch.get_mamba(direction)
+            for direction in self.diagonal_branch.directions
+        )
+        self.mamba_instance_count = len({id(module) for module in mixers})
+        self.last_direction_weights = None
+        self.last_attention_map = None
+        self.last_branch_norms = None
+
+    def forward(self, A, H, V, D):
+        FH, FV = self.axial_branch(
+            self.pre_h(A + H),
+            self.pre_v(A + V),
+        )
+        FD = self.diagonal_branch(self.pre_d(A + D))
+        attention, direction_weights = self.fusion(A, FH, FV, FD)
+        if not self.training:
+            self.last_direction_weights = direction_weights.detach()
+            self.last_attention_map = attention.detach()
+            self.last_branch_norms = {
+                'axial': 0.5 * (
+                    FH.detach().float().square().mean().sqrt().item()
+                    + FV.detach().float().square().mean().sqrt().item()
+                ),
+                'diagonal': FD.detach().float().square().mean().sqrt().item(),
+            }
         return A * attention + A
 
 
@@ -491,6 +931,17 @@ def build_wave_guidance(name, in_channels, allow_fallback=False):
         return DirectionMatchedAWGM(
             in_channels, use_mamba=False, use_dcn=False,
             fusion='spatial_softmax', allow_fallback=allow_fallback,
+        )
+    if name in W8M_VARIANT_CONFIGS:
+        settings = W8M_VARIANT_CONFIGS[name]
+        return WaveletEightDirectionAWGM(
+            in_channels,
+            share_mode=settings['share_mode'],
+            diag_directions=settings['diag_directions'],
+            diag_order='snake',
+            use_direction_embedding=settings['use_direction_embedding'],
+            fusion='spatial_softmax',
+            allow_fallback=allow_fallback,
         )
     raise ValueError(
         "Unknown wave guidance variant: {}. Expected one of {}".format(
@@ -620,21 +1071,40 @@ class DWTFreqNet(nn.Module):
         self.wave_att_f3 = build_wave_guidance(
             awgm_variant, in_channels * 8, awgm_allow_fallback
         )
-        if isinstance(self.wave_att_input_t, DirectionMatchedAWGM):
+        if isinstance(
+            self.wave_att_input_t,
+            (DirectionMatchedAWGM, WaveletEightDirectionAWGM),
+        ):
             self.awgm_backends = {
                 "mamba": self.wave_att_input_t.mamba_backend,
                 "dcn": self.wave_att_input_t.dcn_backend,
             }
+            if isinstance(self.wave_att_input_t, WaveletEightDirectionAWGM):
+                self.awgm_backends.update({
+                    "share_mode": self.wave_att_input_t.share_mode,
+                    "diagonal_order": self.wave_att_input_t.diag_order,
+                    "diagonal_directions": self.wave_att_input_t.diag_directions,
+                    "direction_embedding": (
+                        self.wave_att_input_t.use_direction_embedding
+                    ),
+                    "mamba_instances_per_awgm": (
+                        self.wave_att_input_t.mamba_instance_count
+                    ),
+                })
         else:
             self.awgm_backends = {
                 "mamba": "not_requested",
                 "dcn": "not_requested",
             }
         print(
-            "AWGM variant: {} | Mamba: {} | DCN: {}".format(
+            "AWGM variant: {} | Mamba: {} | DCN: {} | metadata: {}".format(
                 self.awgm_variant,
                 self.awgm_backends["mamba"],
                 self.awgm_backends["dcn"],
+                {
+                    key: value for key, value in self.awgm_backends.items()
+                    if key not in ("mamba", "dcn")
+                },
             )
         )
 

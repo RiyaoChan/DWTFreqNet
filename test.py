@@ -6,7 +6,7 @@ import threading
 from dataset import *
 import time
 from collections import OrderedDict
-from model.DWTFreqNet import DWTFreqNet as DWTFreqNet
+from model.DWTFreqNet import AWGM_VARIANTS, DWTFreqNet
 # from loss import *
 import model.Config as config
 import numpy as np
@@ -399,13 +399,7 @@ parser.add_argument(
     "--awgm_variant",
     type=str,
     default="awgm_original",
-    choices=[
-        "awgm_original",
-        "dm_awgm_full",
-        "dm_awgm_no_mamba",
-        "dm_awgm_no_dcn",
-        "dm_awgm_conv_only",
-    ],
+    choices=AWGM_VARIANTS,
 )
 parser.add_argument("--awgm_allow_fallback", action="store_true")
 

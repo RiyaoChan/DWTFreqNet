@@ -81,6 +81,22 @@ The output results will be saved to the `./log/` directory.
 - `dm_awgm_no_dcn`: horizontal/vertical bidirectional Mamba plus a convolutional D branch
 - `dm_awgm_conv_only`: convolutional branches for all three directions
 
+Wavelet-Aligned Eight-Directional Mamba (W8M-AWGM) adds horizontal LR/RL,
+vertical TB/BT, and diagonal NWSE/SENW/NESW/SWNE scan routes while retaining
+the original `A * attention + A` guidance interface:
+
+- `w8m_diag2_subband_shared`: two diagonal routes, H/V/D subband sharing
+- `w8m_diag4_independent`: eight independent Mamba instances
+- `w8m_diag4_pair_shared`: one Mamba for each forward/reverse geometric pair
+- `w8m_diag4_subband_shared`: H, V, and D each use one shared Mamba
+- `w8m_diag4_axial_diag_shared`: one axial and one diagonal Mamba
+- `w8m_diag4_axial_diag_shared_dir_embed`: two shared Mambas plus route embeddings
+- `w8m_diag4_all_shared`: all eight routes share one Mamba
+
+W8M diagonal routes use cached, invertible `snake` permutations by default.
+The original AWGM remains the default, so existing checkpoint inference is
+unchanged unless a W8M variant is explicitly selected.
+
 Install the additional dependencies from `requirements-dm-awgm.txt`. Formal
 Mamba experiments require a working `mamba_ssm.Mamba` CUDA backend, and formal
 DCN experiments require `torchvision.ops.DeformConv2d`. Fallback backends are
@@ -100,6 +116,33 @@ Run a forward/backward, shape, finite-value, parameter, FLOPs, and speed check:
 
 ```bash
 python tools/smoke_test_dm_awgm.py --awgm_variant dm_awgm_full
+```
+
+Run the exact 3x3 diagonal-order, completeness, inverse-permutation, parameter
+sharing, route-difference, and shared-gradient tests:
+
+```bash
+python tools/test_w8m_diagonal.py
+```
+
+Run a W8M smoke test with checkpoint round-trip, FLOPs, latency, FPS, and peak
+GPU-memory reporting:
+
+```bash
+python tools/smoke_test_dm_awgm.py \
+  --awgm_variant w8m_diag4_subband_shared \
+  --batch-size 1
+```
+
+For NUDT-SIRST Stage 1, the launcher starts prioritized 400-epoch screening
+runs while keeping the cosine scheduler configured for 1000 epochs. Selected
+variants can therefore resume from epoch 400 without changing the LR schedule:
+
+```bash
+PROJECT=/path/to/DWTFreqNet \
+PYTHON_BIN=/path/to/python \
+DATASET_DIR=/path/to/datasets \
+bash scripts/launch_w8m_stage1.sh 0 1 2
 ```
 
 The server-side baseline, full, ablation, and pretrained-weight evaluation

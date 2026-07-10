@@ -24,6 +24,15 @@ def parse_args():
     parser.add_argument("--dataset-dir", required=True)
     parser.add_argument("--output-dir", default="./runs/default")
     parser.add_argument("--epochs", type=int, default=1000)
+    parser.add_argument(
+        "--stop-after-epoch",
+        type=int,
+        default=0,
+        help=(
+            "Stop this invocation after the given epoch while retaining the "
+            "scheduler configured for --epochs; 0 runs through --epochs"
+        ),
+    )
     parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument("--patch-size", type=int, default=256)
     parser.add_argument("--workers", type=int, default=0)
@@ -89,6 +98,36 @@ def deep_supervision_loss(outputs, target, criterion):
     if isinstance(outputs, (tuple, list)):
         return sum(criterion(output, target) for output in outputs)
     return criterion(outputs, target)
+
+
+def collect_awgm_statistics(model):
+    samples = []
+    for module in model.modules():
+        weights = getattr(module, "last_direction_weights", None)
+        attention = getattr(module, "last_attention_map", None)
+        branch_norms = getattr(module, "last_branch_norms", None)
+        if weights is None or attention is None:
+            continue
+        direction_means = weights.detach().float().mean(dim=(0, 2, 3)).cpu()
+        if direction_means.numel() != 3:
+            continue
+        sample = {
+            "mean_G_H": float(direction_means[0]),
+            "mean_G_V": float(direction_means[1]),
+            "mean_G_D": float(direction_means[2]),
+            "attention_mean": float(attention.detach().float().mean().cpu()),
+            "attention_std": float(attention.detach().float().std().cpu()),
+        }
+        if branch_norms:
+            sample["axial_feature_norm"] = float(branch_norms["axial"])
+            sample["diagonal_feature_norm"] = float(branch_norms["diagonal"])
+        samples.append(sample)
+    if not samples:
+        return {}
+    return {
+        key: float(np.mean([sample[key] for sample in samples if key in sample]))
+        for key in samples[0]
+    }
 
 
 class Metrics:
@@ -163,11 +202,15 @@ def evaluate(model, loader, device, threshold):
     metrics = Metrics()
     criterion = nn.BCELoss()
     losses = []
+    awgm_statistics = []
     with torch.no_grad():
         for image, target, size, _ in loader:
             image = image.to(device, non_blocking=True)
             target = target.to(device, non_blocking=True)
             output = final_prediction(model(image))
+            current_statistics = collect_awgm_statistics(model)
+            if current_statistics:
+                awgm_statistics.append(current_statistics)
             height, width = int(size[0]), int(size[1])
             output = output[:, :, :height, :width]
             target = target[:, :, :height, :width]
@@ -175,6 +218,11 @@ def evaluate(model, loader, device, threshold):
             metrics.update(output[0, 0], target[0, 0], height, width, threshold)
     result = metrics.get()
     result["loss"] = float(np.mean(losses)) if losses else 0.0
+    if awgm_statistics:
+        for key in awgm_statistics[0]:
+            result[key] = float(np.mean([
+                statistics[key] for statistics in awgm_statistics
+            ]))
     model.train()
     return result
 
@@ -312,6 +360,36 @@ def main():
         awgm_allow_fallback=args.awgm_allow_fallback,
     ).to(device)
     model.apply(init_weights)
+    total_parameters = sum(parameter.numel() for parameter in model.parameters())
+    awgm_parameters = sum(
+        parameter.numel()
+        for name, parameter in model.named_parameters()
+        if name.startswith("wave_att_")
+    )
+    run_config = {
+        "dataset": args.dataset_name,
+        "seed": args.seed,
+        "epochs": args.epochs,
+        "stop_after_epoch": args.stop_after_epoch,
+        "batch_size": args.batch_size,
+        "patch_size": args.patch_size,
+        "eval_start": args.eval_start,
+        "eval_every": args.eval_every,
+        "save_every": args.save_every,
+        "threshold": args.threshold,
+        "awgm_variant": args.awgm_variant,
+        "awgm_backends": model.awgm_backends,
+        "parameters": total_parameters,
+        "awgm_parameters": awgm_parameters,
+        "output_dir": str(output_dir),
+        "best_checkpoint": str(output_dir / "best.pth.tar"),
+        "latest_checkpoint": str(output_dir / "latest.pth.tar"),
+        "metrics_log": str(metrics_path),
+    }
+    (output_dir / "run_config.json").write_text(
+        json.dumps(run_config, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
     criterion = nn.BCELoss()
     optimizer_settings = {"lr": args.lr}
     scheduler_settings = {"epochs": args.epochs, "eta_min": 1e-5, "last_epoch": -1}
@@ -347,13 +425,19 @@ def main():
                 "output_dir": str(output_dir),
                 "awgm_variant": args.awgm_variant,
                 "awgm_backends": model.awgm_backends,
+                "parameters": total_parameters,
+                "awgm_parameters": awgm_parameters,
             },
             ensure_ascii=False,
         ),
         flush=True,
     )
 
-    for epoch in range(start_epoch, args.epochs + 1):
+    end_epoch = (
+        min(args.epochs, args.stop_after_epoch)
+        if args.stop_after_epoch > 0 else args.epochs
+    )
+    for epoch in range(start_epoch, end_epoch + 1):
         model.train()
         epoch_losses = []
         epoch_start = time.time()
@@ -385,7 +469,7 @@ def main():
             not args.skip_evaluation
             and (
                 (epoch >= args.eval_start and epoch % args.eval_every == 0)
-                or epoch == args.epochs
+                or epoch == end_epoch
             )
         )
         if should_evaluate:
@@ -414,7 +498,7 @@ def main():
         append_jsonl(metrics_path, record)
         print(json.dumps(record, ensure_ascii=False), flush=True)
 
-        if epoch % args.save_every == 0 or epoch == args.epochs:
+        if epoch % args.save_every == 0 or epoch == end_epoch:
             save_checkpoint(
                 output_dir / "latest.pth.tar",
                 epoch,
