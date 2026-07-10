@@ -33,6 +33,19 @@ parser.add_argument("--threads", type=int, default=0, help="Number of threads fo
 parser.add_argument("--threshold", type=float, default=0.5, help="Threshold for test")
 parser.add_argument("--seed", type=int, default=42, help="Threshold for test")
 parser.add_argument("--resume", default=False, type=list, help="Resume from exisiting checkpoints (default: None)")
+parser.add_argument(
+    "--awgm_variant",
+    type=str,
+    default="awgm_original",
+    choices=[
+        "awgm_original",
+        "dm_awgm_full",
+        "dm_awgm_no_mamba",
+        "dm_awgm_no_dcn",
+        "dm_awgm_conv_only",
+    ],
+)
+parser.add_argument("--awgm_allow_fallback", action="store_true")
 
 global opt
 opt = parser.parse_args()
@@ -42,6 +55,8 @@ config_vit = config.get_DWTFreqNet_config()
 
 
 def weights_init_kaiming(m):
+    if getattr(m, "_skip_external_init", False):
+        return
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
         init.kaiming_normal_(m.weight.data, a=0, mode='fan_in')
@@ -258,9 +273,21 @@ class Net(nn.Module):
         self.cal_loss = nn.BCELoss(size_average=True)
         if model_name == 'DWTFreqNet':
             if mode == 'train':
-                self.model = DWTFreqNet(config_vit, mode='train', deepsuper=True)
+                self.model = DWTFreqNet(
+                    config_vit,
+                    mode='train',
+                    deepsuper=True,
+                    awgm_variant=opt.awgm_variant,
+                    awgm_allow_fallback=opt.awgm_allow_fallback,
+                )
             else:
-                self.model = DWTFreqNet(config_vit, mode='test', deepsuper=True)
+                self.model = DWTFreqNet(
+                    config_vit,
+                    mode='test',
+                    deepsuper=True,
+                    awgm_variant=opt.awgm_variant,
+                    awgm_allow_fallback=opt.awgm_allow_fallback,
+                )
     def forward(self, img):
         return self.model(img)
 

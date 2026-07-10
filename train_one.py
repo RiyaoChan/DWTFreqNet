@@ -14,7 +14,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from dataset import TestSetLoader, TrainSetLoader
 from model.Config import get_DWTFreqNet_config
-from model.DWTFreqNet import DWTFreqNet
+from model.DWTFreqNet import AWGM_VARIANTS, DWTFreqNet
 from utils import get_optimizer
 
 
@@ -38,6 +38,21 @@ def parse_args():
     parser.add_argument("--checkpoint", default="")
     parser.add_argument("--max-train-batches", type=int, default=0,
                         help="Limit batches for a smoke test; 0 means no limit")
+    parser.add_argument(
+        "--awgm-variant",
+        default="awgm_original",
+        choices=AWGM_VARIANTS,
+    )
+    parser.add_argument(
+        "--awgm-allow-fallback",
+        action="store_true",
+        help="Allow smoke-test-only MLP/conv backends when Mamba or DCN is missing",
+    )
+    parser.add_argument(
+        "--skip-evaluation",
+        action="store_true",
+        help="Skip validation; intended only for short training smoke tests",
+    )
     return parser.parse_args()
 
 
@@ -50,6 +65,8 @@ def set_seed(seed):
 
 
 def init_weights(module):
+    if getattr(module, "_skip_external_init", False):
+        return
     classname = module.__class__.__name__
     if "Conv" in classname and getattr(module, "weight", None) is not None:
         nn.init.kaiming_normal_(module.weight.data, a=0, mode="fan_in")
@@ -162,6 +179,45 @@ def evaluate(model, loader, device, threshold):
     return result
 
 
+def scheduler_state_dict(scheduler):
+    state = dict(scheduler.state_dict())
+    after_scheduler = getattr(scheduler, "after_scheduler", None)
+    if after_scheduler is not None and "after_scheduler" in state:
+        state["after_scheduler"] = after_scheduler.state_dict()
+        state["after_scheduler_class"] = after_scheduler.__class__.__name__
+    return state
+
+
+def load_scheduler_state_dict(scheduler, state):
+    state = dict(state)
+    after_state = state.pop("after_scheduler", None)
+    state.pop("after_scheduler_class", None)
+
+    # GradualWarmupScheduler inherits the default PyTorch state_dict behavior,
+    # which serializes custom attributes.  In older checkpoints this included
+    # the nested CosineAnnealingLR object itself; loading that object verbatim
+    # makes it keep pointing at the optimizer instance from the old process.
+    # Keep the freshly constructed nested scheduler and only load its scalar
+    # state so resume updates the current optimizer.
+    scheduler.load_state_dict(state)
+    after_scheduler = getattr(scheduler, "after_scheduler", None)
+    if after_scheduler is None or after_state is None:
+        return
+    if hasattr(after_state, "state_dict"):
+        after_state = after_state.state_dict()
+    if isinstance(after_state, dict):
+        after_scheduler.load_state_dict(after_state)
+        last_lrs = after_state.get("_last_lr")
+    else:
+        last_lrs = None
+    if not last_lrs:
+        last_lrs = state.get("_last_lr")
+    if last_lrs:
+        for param_group, lr in zip(scheduler.optimizer.param_groups, last_lrs):
+            param_group["lr"] = lr
+        scheduler._last_lr = list(last_lrs)
+
+
 def save_checkpoint(path, epoch, model, optimizer, scheduler, best_miou, args):
     path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
@@ -169,7 +225,7 @@ def save_checkpoint(path, epoch, model, optimizer, scheduler, best_miou, args):
             "epoch": epoch,
             "state_dict": model.state_dict(),
             "optimizer": optimizer.state_dict(),
-            "scheduler": scheduler.state_dict(),
+            "scheduler": scheduler_state_dict(scheduler),
             "best_mIoU": best_miou,
             "args": vars(args),
         },
@@ -221,7 +277,13 @@ def main():
     if args.eval_only:
         if not args.checkpoint:
             raise ValueError("--checkpoint is required with --eval-only")
-        model = DWTFreqNet(get_DWTFreqNet_config(), mode="test", deepsuper=True).to(device)
+        model = DWTFreqNet(
+            get_DWTFreqNet_config(),
+            mode="test",
+            deepsuper=True,
+            awgm_variant=args.awgm_variant,
+            awgm_allow_fallback=args.awgm_allow_fallback,
+        ).to(device)
         checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=True)
         model.load_state_dict(checkpoint_state_dict(checkpoint, model))
         result = evaluate(model, test_loader, device, args.threshold)
@@ -242,7 +304,13 @@ def main():
         pin_memory=True,
     )
 
-    model = DWTFreqNet(get_DWTFreqNet_config(), mode="train", deepsuper=True).to(device)
+    model = DWTFreqNet(
+        get_DWTFreqNet_config(),
+        mode="train",
+        deepsuper=True,
+        awgm_variant=args.awgm_variant,
+        awgm_allow_fallback=args.awgm_allow_fallback,
+    ).to(device)
     model.apply(init_weights)
     criterion = nn.BCELoss()
     optimizer_settings = {"lr": args.lr}
@@ -255,10 +323,14 @@ def main():
     best_miou = -1.0
     resume_path = output_dir / "latest.pth.tar" if args.resume == "auto" else Path(args.resume)
     if args.resume and resume_path.exists():
-        checkpoint = torch.load(resume_path, map_location=device)
+        # Resume files are generated locally by save_checkpoint above and include
+        # scheduler objects that are not accepted by PyTorch's weights-only loader.
+        checkpoint = torch.load(
+            resume_path, map_location=device, weights_only=False
+        )
         model.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
-        scheduler.load_state_dict(checkpoint["scheduler"])
+        load_scheduler_state_dict(scheduler, checkpoint["scheduler"])
         start_epoch = int(checkpoint["epoch"]) + 1
         best_miou = float(checkpoint.get("best_mIoU", -1.0))
         print(f"Resumed from {resume_path} at epoch {start_epoch}", flush=True)
@@ -273,6 +345,8 @@ def main():
                 "device": torch.cuda.get_device_name(0),
                 "epochs": args.epochs,
                 "output_dir": str(output_dir),
+                "awgm_variant": args.awgm_variant,
+                "awgm_backends": model.awgm_backends,
             },
             ensure_ascii=False,
         ),
@@ -308,8 +382,11 @@ def main():
         writer.add_scalar("train/lr", record["lr"], epoch)
 
         should_evaluate = (
-            (epoch >= args.eval_start and epoch % args.eval_every == 0)
-            or epoch == args.epochs
+            not args.skip_evaluation
+            and (
+                (epoch >= args.eval_start and epoch % args.eval_every == 0)
+                or epoch == args.epochs
+            )
         )
         if should_evaluate:
             result = evaluate(model, test_loader, device, args.threshold)

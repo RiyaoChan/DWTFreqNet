@@ -72,6 +72,41 @@ The output results will be saved to the `./log/` directory.
 
 ---
 
+### DM-AWGM variants
+
+`DWTFreqNet` keeps the original AWGM as the default and also supports:
+
+- `dm_awgm_full`: horizontal/vertical bidirectional Mamba plus diagonal deformable convolution
+- `dm_awgm_no_mamba`: convolutional H/V branches plus diagonal deformable convolution
+- `dm_awgm_no_dcn`: horizontal/vertical bidirectional Mamba plus a convolutional D branch
+- `dm_awgm_conv_only`: convolutional branches for all three directions
+
+Install the additional dependencies from `requirements-dm-awgm.txt`. Formal
+Mamba experiments require a working `mamba_ssm.Mamba` CUDA backend, and formal
+DCN experiments require `torchvision.ops.DeformConv2d`. Fallback backends are
+provided only for smoke testing and are disabled by default.
+
+Example:
+
+```bash
+python train_one.py \
+  --dataset-name NUDT-SIRST \
+  --dataset-dir /path/to/datasets \
+  --output-dir runs/dm_awgm_full \
+  --awgm-variant dm_awgm_full
+```
+
+Run a forward/backward, shape, finite-value, parameter, FLOPs, and speed check:
+
+```bash
+python tools/smoke_test_dm_awgm.py --awgm_variant dm_awgm_full
+```
+
+The server-side baseline, full, ablation, and pretrained-weight evaluation
+results are summarized in [EXPERIMENT_RECORD.md](EXPERIMENT_RECORD.md).
+
+---
+
 ### ▶️ Step 3: Run Test
 
 Run the test script:
@@ -115,4 +150,3 @@ If you find our work useful, please consider citing:
   publisher={IEEE}
 }
 ```
-

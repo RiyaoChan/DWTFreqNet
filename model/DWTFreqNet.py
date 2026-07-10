@@ -23,6 +23,26 @@ import numbers
 import numpy as np
 from thop import profile
 
+try:
+    from mamba_ssm import Mamba
+except Exception:
+    Mamba = None
+
+try:
+    from torchvision.ops import DeformConv2d
+except Exception:
+    DeformConv2d = None
+
+
+AWGM_VARIANTS = (
+    'awgm_original',
+    'dm_awgm_full',
+    'dm_awgm_no_mamba',
+    'dm_awgm_no_dcn',
+    'dm_awgm_conv_only',
+)
+
+
 def get_DWTFreqNet_config():
     config = ml_collections.ConfigDict()
     config.transformer = ml_collections.ConfigDict()
@@ -224,8 +244,274 @@ class WaveDownattention(nn.Module):###这个是那个小波注意力机制
         # hi_bands = torch.cat([x_lh, x_hl, x_hh], dim=1)
         return o #hi_bands #第二个分量好像是高频分量，原网络用于上采样
 
+class FallbackSequenceMixer(nn.Module):
+    """Smoke-test fallback. Formal DM-AWGM experiments must use mamba_ssm."""
+
+    def __init__(self, dim):
+        super().__init__()
+        self.ffn = nn.Sequential(
+            nn.Linear(dim, dim * 2),
+            nn.GELU(),
+            nn.Linear(dim * 2, dim),
+        )
+
+    def forward(self, x):
+        return self.ffn(x)
+
+
+class ConvBranch(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.block = nn.Sequential(
+            nn.Conv2d(dim, dim, 3, padding=1, groups=dim),
+            nn.BatchNorm2d(dim),
+            nn.GELU(),
+            nn.Conv2d(dim, dim, 1),
+        )
+
+    def forward(self, x):
+        return x + self.block(x)
+
+
+class HorizontalBiMamba(nn.Module):
+    def __init__(self, dim, allow_fallback=False):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim)
+        if Mamba is None:
+            if not allow_fallback:
+                raise RuntimeError(
+                    "dm_awgm requires mamba_ssm.Mamba. Install mamba_ssm or "
+                    "enable fallback for smoke tests only."
+                )
+            print("[Warning] mamba_ssm.Mamba is unavailable. "
+                  "Using an MLP fallback for smoke test only.")
+            self.mamba_lr = FallbackSequenceMixer(dim)
+            self.mamba_rl = FallbackSequenceMixer(dim)
+            self.backend = "fallback_mlp"
+        else:
+            self.mamba_lr = Mamba(d_model=dim)
+            self.mamba_rl = Mamba(d_model=dim)
+            for module in self.mamba_lr.modules():
+                module._skip_external_init = True
+            for module in self.mamba_rl.modules():
+                module._skip_external_init = True
+            self.backend = "mamba_ssm.Mamba"
+        self.proj = nn.Linear(dim, dim)
+
+    def forward(self, x):
+        batch, channels, height, width = x.shape
+        sequence = x.permute(0, 2, 3, 1).reshape(batch * height, width, channels)
+        sequence = self.norm(sequence)
+        left_to_right = self.mamba_lr(sequence)
+        right_to_left = torch.flip(
+            self.mamba_rl(torch.flip(sequence, dims=[1])), dims=[1]
+        )
+        output = self.proj(left_to_right + right_to_left)
+        output = output.reshape(batch, height, width, channels)
+        output = output.permute(0, 3, 1, 2).contiguous()
+        return x + output
+
+
+class VerticalBiMamba(nn.Module):
+    def __init__(self, dim, allow_fallback=False):
+        super().__init__()
+        self.norm = nn.LayerNorm(dim)
+        if Mamba is None:
+            if not allow_fallback:
+                raise RuntimeError(
+                    "dm_awgm requires mamba_ssm.Mamba. Install mamba_ssm or "
+                    "enable fallback for smoke tests only."
+                )
+            print("[Warning] mamba_ssm.Mamba is unavailable. "
+                  "Using an MLP fallback for smoke test only.")
+            self.mamba_tb = FallbackSequenceMixer(dim)
+            self.mamba_bt = FallbackSequenceMixer(dim)
+            self.backend = "fallback_mlp"
+        else:
+            self.mamba_tb = Mamba(d_model=dim)
+            self.mamba_bt = Mamba(d_model=dim)
+            for module in self.mamba_tb.modules():
+                module._skip_external_init = True
+            for module in self.mamba_bt.modules():
+                module._skip_external_init = True
+            self.backend = "mamba_ssm.Mamba"
+        self.proj = nn.Linear(dim, dim)
+
+    def forward(self, x):
+        batch, channels, height, width = x.shape
+        sequence = x.permute(0, 3, 2, 1).reshape(batch * width, height, channels)
+        sequence = self.norm(sequence)
+        top_to_bottom = self.mamba_tb(sequence)
+        bottom_to_top = torch.flip(
+            self.mamba_bt(torch.flip(sequence, dims=[1])), dims=[1]
+        )
+        output = self.proj(top_to_bottom + bottom_to_top)
+        output = output.reshape(batch, width, height, channels)
+        output = output.permute(0, 3, 2, 1).contiguous()
+        return x + output
+
+
+class DeformableDiagonalBranch(nn.Module):
+    def __init__(self, dim, kernel_size=3, allow_fallback=False):
+        super().__init__()
+        padding = kernel_size // 2
+        if DeformConv2d is None:
+            if not allow_fallback:
+                raise RuntimeError(
+                    "dm_awgm requires torchvision.ops.DeformConv2d. Install a "
+                    "compatible torchvision build or enable smoke-test fallback."
+                )
+            print("[Warning] torchvision.ops.DeformConv2d is unavailable. "
+                  "Falling back to depthwise separable conv for smoke test only.")
+            self.fallback = ConvBranch(dim)
+            self.backend = "fallback_depthwise_conv"
+        else:
+            self.offset = nn.Conv2d(
+                dim,
+                2 * kernel_size * kernel_size,
+                kernel_size,
+                padding=padding,
+            )
+            nn.init.zeros_(self.offset.weight)
+            nn.init.zeros_(self.offset.bias)
+            self.offset._skip_external_init = True
+            self.dcn = DeformConv2d(
+                dim, dim, kernel_size=kernel_size, padding=padding
+            )
+            self.norm = nn.BatchNorm2d(dim)
+            self.act = nn.GELU()
+            self.pw = nn.Conv2d(dim, dim, 1)
+            self.fallback = None
+            self.backend = "torchvision.ops.DeformConv2d"
+
+    def forward(self, x):
+        if self.fallback is not None:
+            return self.fallback(x)
+        offset = self.offset(x)
+        output = self.dcn(x, offset)
+        output = self.pw(self.act(self.norm(output)))
+        return x + output
+
+
+class DirectionFusionGate(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.gate = nn.Sequential(
+            nn.Conv2d(dim * 4, dim, 1),
+            nn.GELU(),
+            nn.Conv2d(dim, 3, 1),
+        )
+        self.to_att = nn.Sequential(
+            nn.Conv2d(dim * 2, dim, 3, padding=1, groups=dim),
+            nn.GELU(),
+            nn.Conv2d(dim, 1, 1),
+            nn.Sigmoid(),
+        )
+
+    def forward(self, A, FH, FV, FD):
+        logits = self.gate(torch.cat([A, FH, FV, FD], dim=1))
+        weights = torch.softmax(logits, dim=1)
+        fused = (
+            weights[:, 0:1] * FH
+            + weights[:, 1:2] * FV
+            + weights[:, 2:3] * FD
+        )
+        attention = self.to_att(torch.cat([A, fused], dim=1))
+        return attention, weights
+
+
+class DirectionMatchedAWGM(nn.Module):
+    def __init__(
+        self,
+        in_channels,
+        use_mamba=True,
+        use_dcn=True,
+        fusion='spatial_softmax',
+        allow_fallback=False,
+    ):
+        super().__init__()
+        if fusion != 'spatial_softmax':
+            raise ValueError("Only fusion='spatial_softmax' is currently supported")
+        self.pre_h = nn.Conv2d(in_channels, in_channels, 1)
+        self.pre_v = nn.Conv2d(in_channels, in_channels, 1)
+        self.pre_d = nn.Conv2d(in_channels, in_channels, 1)
+
+        if use_mamba:
+            self.h_branch = HorizontalBiMamba(in_channels, allow_fallback)
+            self.v_branch = VerticalBiMamba(in_channels, allow_fallback)
+            self.mamba_backend = self.h_branch.backend
+        else:
+            self.h_branch = ConvBranch(in_channels)
+            self.v_branch = ConvBranch(in_channels)
+            self.mamba_backend = "not_requested"
+
+        if use_dcn:
+            self.d_branch = DeformableDiagonalBranch(
+                in_channels, allow_fallback=allow_fallback
+            )
+            self.dcn_backend = self.d_branch.backend
+        else:
+            self.d_branch = ConvBranch(in_channels)
+            self.dcn_backend = "not_requested"
+
+        self.fusion = DirectionFusionGate(in_channels)
+        self.last_direction_weights = None
+        self.last_attention_map = None
+
+    def forward(self, A, H, V, D):
+        FH = self.h_branch(self.pre_h(A + H))
+        FV = self.v_branch(self.pre_v(A + V))
+        FD = self.d_branch(self.pre_d(A + D))
+        attention, direction_weights = self.fusion(A, FH, FV, FD)
+        if not self.training:
+            self.last_direction_weights = direction_weights.detach()
+            self.last_attention_map = attention.detach()
+        return A * attention + A
+
+
+def build_wave_guidance(name, in_channels, allow_fallback=False):
+    if name == 'awgm_original':
+        return WaveDownattention(in_channels)
+    if name == 'dm_awgm_full':
+        return DirectionMatchedAWGM(
+            in_channels, use_mamba=True, use_dcn=True,
+            fusion='spatial_softmax', allow_fallback=allow_fallback,
+        )
+    if name == 'dm_awgm_no_mamba':
+        return DirectionMatchedAWGM(
+            in_channels, use_mamba=False, use_dcn=True,
+            fusion='spatial_softmax', allow_fallback=allow_fallback,
+        )
+    if name == 'dm_awgm_no_dcn':
+        return DirectionMatchedAWGM(
+            in_channels, use_mamba=True, use_dcn=False,
+            fusion='spatial_softmax', allow_fallback=allow_fallback,
+        )
+    if name == 'dm_awgm_conv_only':
+        return DirectionMatchedAWGM(
+            in_channels, use_mamba=False, use_dcn=False,
+            fusion='spatial_softmax', allow_fallback=allow_fallback,
+        )
+    raise ValueError(
+        "Unknown wave guidance variant: {}. Expected one of {}".format(
+            name, AWGM_VARIANTS
+        )
+    )
+
+
 class DWTFreqNet(nn.Module):
-    def __init__(self, config, n_channels=1, n_classes=1, img_size=256, vis=False, mode='train', deepsuper=True):
+    def __init__(
+        self,
+        config,
+        n_channels=1,
+        n_classes=1,
+        img_size=256,
+        vis=False,
+        mode='train',
+        deepsuper=True,
+        awgm_variant='awgm_original',
+        awgm_allow_fallback=False,
+    ):
         super().__init__()
         self.vis = vis
         self.deepsuper = deepsuper
@@ -233,6 +519,7 @@ class DWTFreqNet(nn.Module):
         self.mode = mode
         self.n_channels = n_channels
         self.n_classes = n_classes
+        self.awgm_variant = awgm_variant
         in_channels = config.base_channel  # basic channel 64
         block = Res_block
         self.up = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
@@ -321,10 +608,35 @@ class DWTFreqNet(nn.Module):
         self.wavel_channel_up_x3_global_output_3_2 = nn.Conv2d(1, in_channels * 8,kernel_size=(1, 1), stride=(1, 1))
 
         ##注意力相关##
-        self.wave_att_input_t = WaveDownattention(32)
-        self.wave_att_f1 = WaveDownattention(in_channels * 2)
-        self.wave_att_f2 = WaveDownattention(in_channels * 4)
-        self.wave_att_f3 = WaveDownattention(in_channels * 8)
+        self.wave_att_input_t = build_wave_guidance(
+            awgm_variant, 32, awgm_allow_fallback
+        )
+        self.wave_att_f1 = build_wave_guidance(
+            awgm_variant, in_channels * 2, awgm_allow_fallback
+        )
+        self.wave_att_f2 = build_wave_guidance(
+            awgm_variant, in_channels * 4, awgm_allow_fallback
+        )
+        self.wave_att_f3 = build_wave_guidance(
+            awgm_variant, in_channels * 8, awgm_allow_fallback
+        )
+        if isinstance(self.wave_att_input_t, DirectionMatchedAWGM):
+            self.awgm_backends = {
+                "mamba": self.wave_att_input_t.mamba_backend,
+                "dcn": self.wave_att_input_t.dcn_backend,
+            }
+        else:
+            self.awgm_backends = {
+                "mamba": "not_requested",
+                "dcn": "not_requested",
+            }
+        print(
+            "AWGM variant: {} | Mamba: {} | DCN: {}".format(
+                self.awgm_variant,
+                self.awgm_backends["mamba"],
+                self.awgm_backends["dcn"],
+            )
+        )
 
         ###输出相关的卷积
         self.out4 = self._make_layer(block, in_channels * 8, in_channels * 8, 1)

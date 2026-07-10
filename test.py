@@ -395,6 +395,19 @@ parser.add_argument("--save_img_dir", type=str, default='./save_img/',###here
                     help="path of saved image")
 parser.add_argument("--save_log", type=str, default='./log/', help="path of saved .pth")###here
 parser.add_argument("--threshold", type=float, default=0.5)
+parser.add_argument(
+    "--awgm_variant",
+    type=str,
+    default="awgm_original",
+    choices=[
+        "awgm_original",
+        "dm_awgm_full",
+        "dm_awgm_no_mamba",
+        "dm_awgm_no_dcn",
+        "dm_awgm_conv_only",
+    ],
+)
+parser.add_argument("--awgm_allow_fallback", action="store_true")
 
 global opt
 opt = parser.parse_args()
@@ -413,7 +426,13 @@ def test():
     eval_05 = PD_FA()
     ROC_05 = ROCMetric05(nclass=1, bins=15)
     config_vit = config.get_DWTFreqNet_config()
-    net = DWTFreqNet(config_vit, mode='test', deepsuper=True).cuda()
+    net = DWTFreqNet(
+        config_vit,
+        mode='test',
+        deepsuper=True,
+        awgm_variant=opt.awgm_variant,
+        awgm_allow_fallback=opt.awgm_allow_fallback,
+    ).cuda()
     state_dict = torch.load(opt.pth_dir)
     # state_dict = torch.load(opt.pth_dir, map_location='cpu')
     new_state_dict = OrderedDict()
