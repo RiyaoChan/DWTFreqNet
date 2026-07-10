@@ -152,3 +152,5 @@ Stage 1 于 2026-07-10 11:49 CST 启动。所有任务使用 NUDT-SIRST、seed 4
 | 5 | IRSTD-1K | `w8m_diag4_axial_diag_shared` |
 
 六个任务均使用 seed 42、batch size 4、patch size 256、1000-epoch scheduler 和 epoch 400 Stage 1 边界。新任务输出目录为 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_stage1_multi/<dataset>/<variant>`，并会继续记录五项性能指标以及方向统计。
+
+重新分配时停止的四个 NUDT 任务只完成了约 16–18 个 epoch，均未到首次评估轮次，不作为最终实验结论；对应目录写入 `STOPPED_DATASET_REALLOCATION` 标记。当前有效运行目录只有上表的六个数据集-变体组合。
