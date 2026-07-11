@@ -1,3 +1,11 @@
+## Experiment A v2: isolated WULLE local branch
+
+`model/DWTFreqNet_WULLE.py` adds the Wavelet U-Net Local-frequency Learning
+Encoder/decoder branch without changing `model/DWTFreqNet.py`. Select it with
+`train_one.py --model-variant dwtfreqnet_wulle_a`; use
+`dwtfreqnet_original` for the baseline. The protocol, commands and live experiment
+table are recorded in `EXPERIMENT_A_WULLE_V2_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
