@@ -86,8 +86,12 @@ provisional until its final epoch.
 | ID | Dataset | Model | AWGM | GPU | PID | Output | Status |
 |---|---|---|---|---:|---:|---|---|
 | A2-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | 6 | 2502361 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | running; epoch 1 |
-| A2-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued second |
-| A2-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued third |
+| A2-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | 3 | 2725159 | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | running; just started |
+| A2-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | 5 | 2725160 | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | running; just started |
+
+After GPU 3 and GPU 5 became available, the waiting W8M scheduler was stopped and
+these two jobs were dispatched directly, so all six 226 GPUs permitted for this
+experiment set are now occupied by the planned WULLE jobs.
 
 ## Validation record
 
