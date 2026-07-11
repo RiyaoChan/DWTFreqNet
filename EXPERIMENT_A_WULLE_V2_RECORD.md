@@ -65,6 +65,30 @@ files required by `dataset.py` (IRSTD uses its canonical loader name `IRSTD-1K`)
 Second-stage A2/A3 W8M experiments are intentionally not started until A0/A1 finish
 and one W8M variant is selected under the protocol in the specification.
 
+## WULLE + eight-direction Mamba selection
+
+After the historical Original baselines were accepted, the three repeated A0 jobs
+were stopped and excluded from formal comparison. The three `awgm_original` WULLE
+jobs have priority. The released capacity is also used for a three-dataset WULLE +
+W8M run selected from the corrected-direction experiments on the new server.
+
+| Variant | NUAA best mIoU | NUDT best mIoU | IRSTD current best mIoU | Three-dataset mean |
+|---|---:|---:|---:|---:|
+| w8m_diag4_subband_shared | 0.777742 | 0.952406 | 0.657319 | 0.795822 |
+| w8m_diag4_axial_diag_shared | 0.785339 | 0.948034 | 0.653019 | 0.795464 |
+| w8m_diag4_axial_diag_shared_dir_embed | 0.774292 | 0.950249 | 0.625487 | 0.783342 |
+
+`w8m_diag4_subband_shared` is selected because it currently wins on NUDT and IRSTD
+and has the highest cross-dataset mean. NUAA and NUDT have completion markers for
+this variant; the new-server IRSTD run is still in progress, so this selection is
+provisional until its final epoch.
+
+| ID | Dataset | Model | AWGM | GPU | PID | Output | Status |
+|---|---|---|---|---:|---:|---|---|
+| A2-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued first |
+| A2-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued second |
+| A2-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued third |
+
 ## Validation record
 
 - Structural, 2×256 output-shape, six-output training-mode and gradient tests: passed.
