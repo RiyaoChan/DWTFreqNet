@@ -55,12 +55,12 @@ files required by `dataset.py` (IRSTD uses its canonical loader name `IRSTD-1K`)
 
 | ID | Dataset | Model | AWGM | GPU | PID | Output | Status / epoch | Best metrics |
 |---|---|---|---|---:|---:|---|---|---|
-| A0-NUAA | NUAA-SIRST | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_original/awgm_original` | queued | |
-| A1-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | awgm_original | | | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/awgm_original` | queued | |
-| A0-NUDT | NUDT-SIRST | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_original/awgm_original` | queued | |
-| A1-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | awgm_original | | | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/awgm_original` | queued | |
-| A0-IRSTD | IRSTD-1K | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_original/awgm_original` | queued | |
-| A1-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | awgm_original | | | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/awgm_original` | queued | |
+| A0-NUAA | NUAA-SIRST | dwtfreqnet_original | awgm_original | 0 | 2491245 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_original/awgm_original` | running; epoch 2 | evaluation starts at 100 |
+| A1-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | awgm_original | 1 | 2491260 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/awgm_original` | running; epoch 2 | evaluation starts at 100 |
+| A0-NUDT | NUDT-SIRST | dwtfreqnet_original | awgm_original | 2 | 2491399 | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_original/awgm_original` | running; epoch 1 in progress | evaluation starts at 100 |
+| A1-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | awgm_original | auto | pending | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/awgm_original` | queued | |
+| A0-IRSTD | IRSTD-1K | dwtfreqnet_original | awgm_original | 6 | 2491471 | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_original/awgm_original` | running; epoch 1 in progress | evaluation starts at 100 |
+| A1-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | awgm_original | auto | pending | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/awgm_original` | queued | |
 
 Second-stage A2/A3 W8M experiments are intentionally not started until A0/A1 finish
 and one W8M variant is selected under the protocol in the specification.
@@ -70,5 +70,9 @@ and one W8M variant is selected under the protocol in the specification.
 - Structural, 2×256 output-shape, six-output training-mode and gradient tests: passed.
 - Four-variant smoke tests: passed (local Mamba-unavailable variants used the explicit test-only fallback; formal A0/A1 use no fallback).
 - Haar synthetic line/step mapping and W8M routing checks: passed.
-- Server profile: pending.
-- 226-server deployment and launch: pending.
+- Server full-shape/backward and no-fallback `awgm_original` checks: passed.
+- 226-server deployment: `/DATA20T/bip/cry/code/DWTFreqNet_WULLE_A_V2`.
+- Queue scheduler PID: `2491226`; launched at `2026-07-11T23:28:31+08:00`.
+- The pre-training dataset-root validation failure is archived separately at
+  `runs/experiment_a_v2_failed_dataset_root_20260711_2326`; it ran zero epochs and
+  is excluded from all formal results.
