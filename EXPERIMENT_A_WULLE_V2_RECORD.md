@@ -48,14 +48,19 @@ NUDT and IRSTD baselines first, then automatically starts the two remaining WULL
 jobs as soon as one of those four GPUs becomes idle. Each candidate GPU must have
 at most 1024 MiB allocated and at most 5% utilization at dispatch time.
 
+The loader root is `/DATA20T/bip/cry/code/DWTFreqNet_DM_AWGM/datasets`. Its image
+directories resolve to the requested `/DATA20T/bip/cry/code/SIRST-5K-main/dataset`
+data, while the wrapper supplies the repository-specific 50/50 `img_idx` split
+files required by `dataset.py` (IRSTD uses its canonical loader name `IRSTD-1K`).
+
 | ID | Dataset | Model | AWGM | GPU | PID | Output | Status / epoch | Best metrics |
 |---|---|---|---|---:|---:|---|---|---|
 | A0-NUAA | NUAA-SIRST | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_original/awgm_original` | queued | |
 | A1-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | awgm_original | | | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/awgm_original` | queued | |
 | A0-NUDT | NUDT-SIRST | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_original/awgm_original` | queued | |
 | A1-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | awgm_original | | | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/awgm_original` | queued | |
-| A0-IRSTD | IRSTD-1k | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/IRSTD-1k/dwtfreqnet_original/awgm_original` | queued | |
-| A1-IRSTD | IRSTD-1k | dwtfreqnet_wulle_a | awgm_original | | | `runs/experiment_a_v2/IRSTD-1k/dwtfreqnet_wulle_a/awgm_original` | queued | |
+| A0-IRSTD | IRSTD-1K | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_original/awgm_original` | queued | |
+| A1-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | awgm_original | | | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/awgm_original` | queued | |
 
 Second-stage A2/A3 W8M experiments are intentionally not started until A0/A1 finish
 and one W8M variant is selected under the protocol in the specification.

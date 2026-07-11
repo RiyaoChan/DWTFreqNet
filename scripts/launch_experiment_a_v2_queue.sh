@@ -2,7 +2,7 @@
 set -euo pipefail
 
 PROJECT_ROOT="${PROJECT_ROOT:-$(cd "$(dirname "$0")/.." && pwd)}"
-DATASET_DIR="${DATASET_DIR:-/DATA20T/bip/cry/code/SIRST-5K-main/dataset}"
+DATASET_DIR="${DATASET_DIR:-/DATA20T/bip/cry/code/DWTFreqNet_DM_AWGM/datasets}"
 PYTHON_BIN="${PYTHON_BIN:-python}"
 GPU_LIST="${GPU_LIST:-0,1,2,6}"
 POLL_SECONDS="${POLL_SECONDS:-60}"
@@ -13,9 +13,9 @@ tasks=(
   "A0-NUAA|NUAA-SIRST|dwtfreqnet_original"
   "A1-NUAA|NUAA-SIRST|dwtfreqnet_wulle_a"
   "A0-NUDT|NUDT-SIRST|dwtfreqnet_original"
-  "A0-IRSTD|IRSTD-1k|dwtfreqnet_original"
+  "A0-IRSTD|IRSTD-1K|dwtfreqnet_original"
   "A1-NUDT|NUDT-SIRST|dwtfreqnet_wulle_a"
-  "A1-IRSTD|IRSTD-1k|dwtfreqnet_wulle_a"
+  "A1-IRSTD|IRSTD-1K|dwtfreqnet_wulle_a"
 )
 
 IFS=',' read -r -a allowed_gpus <<< "$GPU_LIST"
