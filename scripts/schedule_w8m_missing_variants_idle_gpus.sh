@@ -79,7 +79,7 @@ start_task() {
   fi
   echo "[$(date --iso-8601=seconds)] launch task=$index gpu=$gpu dataset=$dataset variant=$variant"
   PROJECT="$PROJECT" PYTHON_BIN="$PYTHON_BIN" DATASET_DIR="$DATASET_DIR" \
-    OUTPUT_ROOT="$OUTPUT_ROOT" "$RUNNER" "$dataset" "$variant" "$gpu" 1000 \
+    OUTPUT_ROOT="$OUTPUT_ROOT/$dataset" "$RUNNER" "$dataset" "$variant" "$gpu" 1000 \
     >> "$output/scheduler.log" 2>&1 &
   ACTIVE_PID[$gpu]=$!
   ACTIVE_TASK[$gpu]=$index

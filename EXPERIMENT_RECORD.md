@@ -211,4 +211,4 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 2. `w8m_diag2_subband_shared`、`w8m_diag4_pair_shared`（各 3 个数据集）
 3. `w8m_diag4_independent`、`w8m_diag4_all_shared`（各 3 个数据集）
 
-调度器于 2026-07-10 23:44:14 CST 启动；当时 6 张 GPU 全部被正式任务占用，因此队列保持等待状态，不抢占当前任务。后续任何 GPU 释放后，调度器会自动启动队列中的下一项。
+调度器于 2026-07-10 23:44:14 CST 启动；当时 6 张 GPU 全部被正式任务占用，因此队列保持等待状态，不抢占当前任务。首次获得空闲 GPU 后发现 runner 的 `OUTPUT_ROOT` 需要按数据集展开，导致两个短暂的 `dir_embed` 进程错误共用变体目录；这些权重和日志已归档至 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_invalid_output_collision_20260711_090000` 并标记为无效。修正后的调度器于 2026-07-11 09:01:17 CST 重新启动，当前 NUDT-SIRST 与 NUAA-SIRST 的 `w8m_diag4_axial_diag_shared_dir_embed` 已分别写入独立目录；后续任务继续按空闲 GPU 自动排队。
