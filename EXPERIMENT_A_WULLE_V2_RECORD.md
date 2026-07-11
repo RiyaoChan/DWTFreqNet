@@ -42,6 +42,12 @@ CosineAnnealingLR with eta_min 1e-5, evaluation every epoch from epoch 100,
 checkpoint every 20 epochs, and threshold 0.5. No fallback backend or pretrained
 original-model checkpoint is used.
 
+The 226-server queue uses only GPUs 0, 1, 2 and 6 because GPUs 3, 4 and 5 were
+already occupied when the queue was launched. It starts both NUAA models plus the
+NUDT and IRSTD baselines first, then automatically starts the two remaining WULLE
+jobs as soon as one of those four GPUs becomes idle. Each candidate GPU must have
+at most 1024 MiB allocated and at most 5% utilization at dispatch time.
+
 | ID | Dataset | Model | AWGM | GPU | PID | Output | Status / epoch | Best metrics |
 |---|---|---|---|---:|---:|---|---|---|
 | A0-NUAA | NUAA-SIRST | dwtfreqnet_original | awgm_original | | | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_original/awgm_original` | queued | |
