@@ -212,3 +212,48 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 3. `w8m_diag4_independent`、`w8m_diag4_all_shared`（各 3 个数据集）
 
 调度器于 2026-07-10 23:44:14 CST 启动；当时 6 张 GPU 全部被正式任务占用，因此队列保持等待状态，不抢占当前任务。首次获得空闲 GPU 后发现 runner 的 `OUTPUT_ROOT` 需要按数据集展开，导致两个短暂的 `dir_embed` 进程错误共用变体目录；这些权重和日志已归档至 `/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_invalid_output_collision_20260711_090000` 并标记为无效。修正后的调度器于 2026-07-11 09:01:17 CST 重新启动，当前 NUDT-SIRST 与 NUAA-SIRST 的 `w8m_diag4_axial_diag_shared_dir_embed` 已分别写入独立目录；后续任务继续按空闲 GPU 自动排队。
+
+## 17. 结果快照（2026-07-11 20:10 CST）
+
+以下快照直接对应服务器上的 `metrics.jsonl` 和 `best_metrics.json`；mIoU、nIoU、F1、Pd 为百分比，Fa 为 `×10^-6`。尚未开始测试集评估的任务以 `—` 表示。
+
+### 新服务器 W8M
+
+| 数据集 | 方案 | 当前 epoch | 最佳 epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | `w8m_diag4_subband_shared` | 1000 | 294 | 77.7742 | 78.0461 | 87.4977 | 95.8015 | 32.6540 |
+| NUAA-SIRST | `w8m_diag4_axial_diag_shared` | 1000 | 350 | 78.5339 | 78.4651 | 87.9765 | 95.8015 | 19.2082 |
+| NUAA-SIRST | `w8m_diag4_axial_diag_shared_dir_embed` | 1000 | 546 | 77.4292 | 78.0457 | 87.2790 | 95.4198 | 18.6594 |
+| NUDT-SIRST | `w8m_diag4_subband_shared` | 950 | 337 | 95.2406 | 95.3566 | 97.5623 | 99.4709 | 3.0334 |
+| NUDT-SIRST | `w8m_diag4_axial_diag_shared` | 951 | 491 | 94.8034 | 95.2712 | 97.3324 | 99.3651 | 6.0897 |
+| NUDT-SIRST | `w8m_diag4_axial_diag_shared_dir_embed` | 396 | 392 | 95.0249 | 95.2632 | 97.4490 | 99.4709 | 3.0104 |
+| IRSTD-1K | `w8m_diag4_subband_shared` | 726 | 599 | 65.7319 | 65.1970 | 79.3232 | 91.5825 | 18.8647 |
+| IRSTD-1K | `w8m_diag4_axial_diag_shared` | 728 | 700 | 65.3019 | 65.3385 | 79.0092 | 92.2559 | 13.3230 |
+| IRSTD-1K | `w8m_diag4_axial_diag_shared_dir_embed` | 46 | — | — | — | — | — | — |
+
+其余 12 个 W8M 方案-数据集组合仍在动态队列中，未开始训练。
+
+### 旧服务器 baseline 与 DM-AWGM full
+
+| 数据集 | 方案 | 最佳 epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | baseline | 540 | 77.5118 | 78.6100 | 87.3314 | 95.0382 | 21.5407 |
+| NUAA-SIRST | `dm_awgm_full` | 460 | 79.3581 | 79.0560 | 88.4913 | 96.9466 | 17.1502 |
+| NUDT-SIRST | baseline | 585 | 94.9807 | 95.2359 | 97.4257 | 99.1534 | 4.2513 |
+| NUDT-SIRST | `dm_awgm_full` | 530 | 94.8446 | 95.2489 | 97.3541 | 99.5767 | 6.2506 |
+| IRSTD-1K | baseline | 490 | 65.3450 | 64.1243 | 79.0408 | 91.9192 | 15.5435 |
+| IRSTD-1K | `dm_awgm_full` | 885 | 65.9503 | 65.7152 | 79.4820 | 91.5825 | 13.8923 |
+
+### 旧服务器 DM 消融
+
+| 数据集 | 方案 | 当前 epoch | 最佳 epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUDT-SIRST | `dm_awgm_no_mamba` | 1000 | 635 | 95.3122 | 95.4920 | 97.5999 | 99.3651 | 3.6309 |
+| NUDT-SIRST | `dm_awgm_no_dcn` | 1000 | 535 | 95.2509 | 95.3150 | 97.5677 | 99.0476 | 3.4930 |
+| NUDT-SIRST | `dm_awgm_conv_only` | 1000 | 510 | 95.2752 | 95.2868 | 97.5804 | 99.2593 | 3.6079 |
+| NUAA-SIRST | `dm_awgm_no_mamba` | 1000 | 225 | 77.3049 | 77.3722 | 87.2000 | 95.8015 | 23.4615 |
+| NUAA-SIRST | `dm_awgm_no_dcn` | 1000 | 855 | 78.2857 | 78.1710 | 87.8205 | 96.5649 | 14.2690 |
+| NUAA-SIRST | `dm_awgm_conv_only` | 1000 | 395 | 78.3583 | 78.8942 | 87.8662 | 95.8015 | 16.9444 |
+| IRSTD-1K | `dm_awgm_no_mamba` | 671 | 450 | 65.2340 | 64.9133 | 78.9595 | 92.5926 | 24.8240 |
+| IRSTD-1K | `dm_awgm_no_dcn` | 596 | 580 | 65.5795 | 65.8119 | 79.2121 | 93.9394 | 14.7464 |
+| IRSTD-1K | `dm_awgm_conv_only` | 637 | 625 | 65.9995 | 66.1821 | 79.5177 | 92.5926 | 13.9493 |
