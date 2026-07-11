@@ -55,15 +55,15 @@ files required by `dataset.py` (IRSTD uses its canonical loader name `IRSTD-1K`)
 
 | ID | Dataset | Model | AWGM | GPU | PID | Output | Status / epoch | Best metrics |
 |---|---|---|---|---:|---:|---|---|---|
-| A0-NUAA | NUAA-SIRST | dwtfreqnet_original | awgm_original | 0 | 2491245 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_original/awgm_original` | running; epoch 2 | evaluation starts at 100 |
-| A1-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | awgm_original | 1 | 2491260 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/awgm_original` | running; epoch 2 | evaluation starts at 100 |
-| A0-NUDT | NUDT-SIRST | dwtfreqnet_original | awgm_original | 2 | 2491399 | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_original/awgm_original` | running; epoch 1 in progress | evaluation starts at 100 |
-| A1-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | awgm_original | auto | pending | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/awgm_original` | queued | |
-| A0-IRSTD | IRSTD-1K | dwtfreqnet_original | awgm_original | 6 | 2491471 | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_original/awgm_original` | running; epoch 1 in progress | evaluation starts at 100 |
-| A1-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | awgm_original | auto | pending | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/awgm_original` | queued | |
+| A0-NUAA | NUAA-SIRST | dwtfreqnet_original | awgm_original | 0 | 2491245 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_original/awgm_original` | stopped by request after epoch 46 | historical baseline used |
+| A1-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | awgm_original | 1 | 2491260 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/awgm_original` | running; epoch 62 | evaluation starts at 100 |
+| A0-NUDT | NUDT-SIRST | dwtfreqnet_original | awgm_original | 2 | 2491399 | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_original/awgm_original` | stopped by request after epoch 15 | historical baseline used |
+| A1-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | awgm_original | 0 | 2500662 | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/awgm_original` | running; epoch 3 | evaluation starts at 100 |
+| A0-IRSTD | IRSTD-1K | dwtfreqnet_original | awgm_original | 6 | 2491471 | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_original/awgm_original` | stopped by request after epoch 12 | historical baseline used |
+| A1-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | awgm_original | 2 | 2500672 | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/awgm_original` | running; epoch 2 | evaluation starts at 100 |
 
-Second-stage A2/A3 W8M experiments are intentionally not started until A0/A1 finish
-and one W8M variant is selected under the protocol in the specification.
+The original plan to delay A2/A3 until A0/A1 completion was superseded after the
+historical A0 baselines were accepted and the user requested concurrent W8M runs.
 
 ## WULLE + eight-direction Mamba selection
 
@@ -85,7 +85,7 @@ provisional until its final epoch.
 
 | ID | Dataset | Model | AWGM | GPU | PID | Output | Status |
 |---|---|---|---|---:|---:|---|---|
-| A2-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued first |
+| A2-NUAA | NUAA-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | 6 | 2502361 | `runs/experiment_a_v2/NUAA-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | running; epoch 1 |
 | A2-NUDT | NUDT-SIRST | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/NUDT-SIRST/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued second |
 | A2-IRSTD | IRSTD-1K | dwtfreqnet_wulle_a | w8m_diag4_subband_shared | auto | pending | `runs/experiment_a_v2/IRSTD-1K/dwtfreqnet_wulle_a/w8m_diag4_subband_shared` | queued third |
 
@@ -97,6 +97,7 @@ provisional until its final epoch.
 - Server full-shape/backward and no-fallback `awgm_original` checks: passed.
 - 226-server deployment: `/DATA20T/bip/cry/code/DWTFreqNet_WULLE_A_V2`.
 - Queue scheduler PID: `2491226`; launched at `2026-07-11T23:28:31+08:00`.
+- W8M queue scheduler PID: `2502325`; launched at `2026-07-11T23:49:09+08:00`.
 - The pre-training dataset-root validation failure is archived separately at
   `runs/experiment_a_v2_failed_dataset_root_20260711_2326`; it ran zero epochs and
   is excluded from all formal results.
