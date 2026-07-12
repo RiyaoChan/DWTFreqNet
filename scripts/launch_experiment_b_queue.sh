@@ -14,13 +14,13 @@ RUNTIME_LOG="$PROJECT_ROOT/runs/experiment_b/queue_runtime.tsv"
 tasks=(
   "B0-NUAA|NUAA-SIRST|sd_raw"
   "B1-NUAA|NUAA-SIRST|sd_awgm"
+  "B0-NUDT|NUDT-SIRST|sd_raw"
+  "B0-IRSTD|IRSTD-1K|sd_raw"
   "B2-NUAA|NUAA-SIRST|sd_pyramid"
   "B3-NUAA|NUAA-SIRST|sd_full"
-  "B0-NUDT|NUDT-SIRST|sd_raw"
   "B3-NUDT|NUDT-SIRST|sd_full"
   "B1-NUDT|NUDT-SIRST|sd_awgm"
   "B2-NUDT|NUDT-SIRST|sd_pyramid"
-  "B0-IRSTD|IRSTD-1K|sd_raw"
   "B3-IRSTD|IRSTD-1K|sd_full"
 )
 
@@ -62,10 +62,22 @@ find_idle_gpu() {
   return 1
 }
 
+output_is_active() {
+  local output_dir="$1"
+  ps -eo args= | grep -F "train_experiment_b.py" | \
+    grep -F -- "--output-dir $output_dir" | grep -v grep >/dev/null
+}
+
 cd "$PROJECT_ROOT"
 for task in "${tasks[@]}"; do
   IFS='|' read -r experiment_id dataset sd_variant <<< "$task"
   output_dir="runs/experiment_b/$dataset/$sd_variant/seed$SEED"
+  if output_is_active "$output_dir"; then
+    printf '%s\t%s\t%s\t%s\t%s\t-\t-\t%s\tskipped_active\n' \
+      "$(date --iso-8601=seconds)" "$experiment_id" "$dataset" \
+      "$sd_variant" "$SEED" "$output_dir" | tee -a "$RUNTIME_LOG"
+    continue
+  fi
   if [[ -f "$output_dir/COMPLETED" ]]; then
     printf '%s\t%s\t%s\t%s\t%s\t-\t-\t%s\tskipped_completed\n' \
       "$(date --iso-8601=seconds)" "$experiment_id" "$dataset" \
