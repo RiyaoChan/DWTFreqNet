@@ -4,6 +4,7 @@
 
 - Base commit: `b98bb4e25b425d9fdf5f2ccbadca6f76af38b539`
 - Branch: `codex/experiment-b-single-decoder-directional-pyramid`
+- Implementation commit: `2ee0878c2e5ef8bd4639f58282cf41ce4e5dc44c`
 - Model: `model/DWTFreqNet_SingleDecoder.py`
 - Original and WULLE model files: unchanged
 - Dataset split root: `/DATA20T/bip/cry/code/DWTFreqNet_DM_AWGM/datasets`
@@ -34,6 +35,8 @@ decoder, post-AWGM, transformer fusion or LDRC modules.
 - Gradient and bypass checks: passed for all four variants
 - Haar H/LH→vertical and V/HL→horizontal: passed; routing aligned
 - Complexity profile: passed; both required complexity gates hold
+- 226-server 2×256 full test: passed
+- Four-variant real-data one-batch smoke test: passed
 
 ## Complexity
 
@@ -55,9 +58,9 @@ Original, so formal training is allowed to proceed.
 
 | ID | Dataset | Variant | AWGM | Pyramid | GPU | PID | Output | Status | Best metrics |
 |---|---|---|---:|---:|---:|---:|---|---|---|
-| B0-NUAA | NUAA-SIRST | sd_raw | No | No | | | `runs/experiment_b/NUAA-SIRST/sd_raw/seed42` | queued | |
-| B1-NUAA | NUAA-SIRST | sd_awgm | Yes | No | | | `runs/experiment_b/NUAA-SIRST/sd_awgm/seed42` | queued | |
-| B2-NUAA | NUAA-SIRST | sd_pyramid | No | Yes | | | `runs/experiment_b/NUAA-SIRST/sd_pyramid/seed42` | queued | |
+| B0-NUAA | NUAA-SIRST | sd_raw | No | No | 1 | 3092182 | `runs/experiment_b/NUAA-SIRST/sd_raw/seed42` | running; epoch 2 | evaluation starts at 100 |
+| B1-NUAA | NUAA-SIRST | sd_awgm | Yes | No | 4 | 3092264 | `runs/experiment_b/NUAA-SIRST/sd_awgm/seed42` | running; epoch 2 | evaluation starts at 100 |
+| B2-NUAA | NUAA-SIRST | sd_pyramid | No | Yes | 6 | 3092353 | `runs/experiment_b/NUAA-SIRST/sd_pyramid/seed42` | running; epoch 2 | evaluation starts at 100 |
 | B3-NUAA | NUAA-SIRST | sd_full | Yes | Yes | | | `runs/experiment_b/NUAA-SIRST/sd_full/seed42` | queued | |
 | B0-NUDT | NUDT-SIRST | sd_raw | No | No | | | `runs/experiment_b/NUDT-SIRST/sd_raw/seed42` | queued | |
 | B3-NUDT | NUDT-SIRST | sd_full | Yes | Yes | | | `runs/experiment_b/NUDT-SIRST/sd_full/seed42` | queued | |
@@ -65,6 +68,11 @@ Original, so formal training is allowed to proceed.
 | B2-NUDT | NUDT-SIRST | sd_pyramid | No | Yes | | | `runs/experiment_b/NUDT-SIRST/sd_pyramid/seed42` | queued | |
 | B0-IRSTD | IRSTD-1K | sd_raw | No | No | | | `runs/experiment_b/IRSTD-1K/sd_raw/seed42` | queued | |
 | B3-IRSTD | IRSTD-1K | sd_full | Yes | Yes | | | `runs/experiment_b/IRSTD-1K/sd_full/seed42` | queued | |
+
+The isolated deployment is `/DATA20T/bip/cry/code/DWTFreqNet_SINGLE_DECODER_B`.
+Queue scheduler PID `3092160` started at `2026-07-12T21:00:10+08:00`. It only
+dispatches when memory usage is at most 1024 MiB and utilization is at most 5%, so
+the existing Experiment A processes on GPUs 0, 2, 3 and 5 were left untouched.
 
 ## Results
 
