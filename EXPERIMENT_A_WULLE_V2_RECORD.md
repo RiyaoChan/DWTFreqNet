@@ -105,3 +105,42 @@ experiment set are now occupied by the planned WULLE jobs.
 - The pre-training dataset-root validation failure is archived separately at
   `runs/experiment_a_v2_failed_dataset_root_20260711_2326`; it ran zero epochs and
   is excluded from all formal results.
+
+## Latest status snapshot (2026-07-12)
+
+### 226 server
+
+The NUAA `awgm_original` WULLE-A and WULLE+Mamba jobs reached epoch 1000. The
+other four jobs are still training; the values below are the latest evaluated
+records unless explicitly marked as a best checkpoint.
+
+| Dataset | Model/AWGM | Epoch | Latest mIoU | Best mIoU observed |
+|---|---|---:|---:|---:|
+| NUAA-SIRST | WULLE-A / awgm_original | 1000 | 0.773623 | 0.798215 |
+| NUDT-SIRST | WULLE-A / awgm_original | 830 | 0.936626 | 0.941684 |
+| IRSTD-1K | WULLE-A / awgm_original | 574 | 0.650734 | ≥0.650734 |
+| NUAA-SIRST | WULLE-A / w8m_diag4_subband_shared | 1000 | 0.772083 | 0.781281 |
+| NUDT-SIRST | WULLE-A / w8m_diag4_subband_shared | 408 | 0.945403 | pending final |
+| IRSTD-1K | WULLE-A / w8m_diag4_subband_shared | 326 | 0.641232 | pending final |
+
+At this snapshot GPUs 1, 4 and 6 were idle; GPUs 0, 2, 3 and 5 were occupied.
+
+### New server W8M matrix
+
+The following are intermediate best checkpoints from
+`runs/w8m_haar_aligned_full`; none is treated as a final 1000-epoch result yet.
+
+| Variant | NUAA mIoU | NUDT mIoU | IRSTD mIoU |
+|---|---:|---:|---:|
+| w8m_diag4_subband_shared | 0.777742 | 0.952406 | 0.657319 |
+| w8m_diag4_axial_diag_shared | 0.785339 | 0.948034 | 0.653019 |
+| w8m_diag4_axial_diag_shared_dir_embed | 0.774292 | 0.950249 | 0.657663 |
+| w8m_diag2_subband_shared | 0.783085 | 0.945438 | 0.646300 |
+| w8m_diag4_pair_shared | 0.780801 | 0.947805 | 0.611054 |
+
+The current per-dataset leaders are axial-diag-shared on NUAA, subband-shared on
+NUDT, and axial-diag-shared-dir-embed on IRSTD. Subband-shared remains the highest
+three-dataset mean among the currently observed checkpoints. The new server had no
+GPU satisfying the idle dispatch threshold at this snapshot. Several W8M output
+directories also showed more than one active process; therefore these values must
+be de-duplicated and revalidated before being used as final paper results.
