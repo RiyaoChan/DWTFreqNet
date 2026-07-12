@@ -6,6 +6,13 @@ Encoder/decoder branch without changing `model/DWTFreqNet.py`. Select it with
 `dwtfreqnet_original` for the baseline. The protocol, commands and live experiment
 table are recorded in `EXPERIMENT_A_WULLE_V2_RECORD.md`.
 
+## Experiment B: single decoder directional pyramid
+
+`model/DWTFreqNet_SingleDecoder.py` isolates a four-DWT/four-IDWT architecture
+with one wavelet decoder. Its `sd_raw`, `sd_awgm`, `sd_pyramid`, and `sd_full`
+variants are trained through `train_experiment_b.py`; protocol and live results
+are recorded in `EXPERIMENT_B_SINGLE_DECODER_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
