@@ -257,3 +257,44 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 | IRSTD-1K | `dm_awgm_no_mamba` | 671 | 450 | 65.2340 | 64.9133 | 78.9595 | 92.5926 | 24.8240 |
 | IRSTD-1K | `dm_awgm_no_dcn` | 596 | 580 | 65.5795 | 65.8119 | 79.2121 | 93.9394 | 14.7464 |
 | IRSTD-1K | `dm_awgm_conv_only` | 637 | 625 | 65.9995 | 66.1821 | 79.5177 | 92.5926 | 13.9493 |
+
+## 18. 新服务器 W8M/Mamba 最新结果回填（停止前快照，2026-07-13）
+
+新服务器上仍有此前部署的 W8M-AWGM（Mamba）实验。以下结果从
+`/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_haar_aligned_full` 下各实验的
+`best_metrics.json` 和 `metrics.jsonl` 回填；指标为百分比，Fa 为 `×10^-6`。
+旧的 H/V 方向相反实验已标记为无效，不纳入本表。
+
+| 数据集 | 方案 | 状态/当前 epoch | 最佳 epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | `w8m_diag2_subband_shared` | 完成/1000 | 553 | 78.3085 | 78.4080 | 87.8348 | 96.1832 | 15.5038 |
+| NUAA-SIRST | `w8m_diag4_subband_shared` | 完成/1000 | 294 | 77.7742 | 78.0461 | 87.4977 | 95.8015 | 32.6540 |
+| NUAA-SIRST | `w8m_diag4_axial_diag_shared` | 完成/1000 | 350 | 78.5339 | 78.4651 | 87.9765 | 95.8015 | 19.2082 |
+| NUAA-SIRST | `w8m_diag4_axial_diag_shared_dir_embed` | 完成/1000 | 546 | 77.4292 | 78.0457 | 87.2790 | 95.4198 | 18.6594 |
+| NUAA-SIRST | `w8m_diag4_pair_shared` | 完成/1000 | 449 | 78.0801 | 78.3486 | 87.6910 | 95.4198 | 16.8758 |
+| NUAA-SIRST | `w8m_diag4_independent` | 完成/1000 | 355 | 78.5683 | 78.8043 | 87.9981 | 96.1832 | 33.4772 |
+| NUAA-SIRST | `w8m_diag4_all_shared` | 进行中/663 | 334 | 78.1965 | 79.5442 | 87.7643 | 95.4198 | 30.9390 |
+| NUDT-SIRST | `w8m_diag2_subband_shared` | 完成/1000 | 337 | 94.5438 | 95.1337 | 97.1954 | 99.5767 | 7.6294 |
+| NUDT-SIRST | `w8m_diag4_subband_shared` | 完成/1000 | 337 | 95.2406 | 95.3566 | 97.5623 | 99.4709 | 3.0334 |
+| NUDT-SIRST | `w8m_diag4_axial_diag_shared` | 完成/1000 | 491 | 94.8034 | 95.2712 | 97.3324 | 99.3651 | 6.0897 |
+| NUDT-SIRST | `w8m_diag4_axial_diag_shared_dir_embed` | 完成/1000 | 392 | 95.0249 | 95.2632 | 97.4490 | 99.4709 | 3.0104 |
+| NUDT-SIRST | `w8m_diag4_pair_shared` | 完成/1000 | 510 | 94.9605 | 95.2263 | 97.4151 | 99.1534 | 3.8836 |
+| NUDT-SIRST | `w8m_diag4_independent` | 进行中/961 | 271 | 94.9061 | 94.9621 | 97.3865 | 99.1534 | 3.2862 |
+| NUDT-SIRST | `w8m_diag4_all_shared` | 进行中/327 | 295 | 95.0420 | 95.2982 | 97.4580 | 99.3651 | 3.6079 |
+| IRSTD-1K | `w8m_diag2_subband_shared` | 完成/1000 | 458 | 66.1710 | 66.4951 | 79.6420 | 92.9293 | 16.1508 |
+| IRSTD-1K | `w8m_diag4_subband_shared` | 完成/1000 | 599 | 65.7319 | 65.1970 | 79.3232 | 91.5825 | 18.8647 |
+| IRSTD-1K | `w8m_diag4_axial_diag_shared` | 完成/1000 | 700 | 65.3019 | 65.3385 | 79.0092 | 92.2559 | 13.3230 |
+| IRSTD-1K | `w8m_diag4_axial_diag_shared_dir_embed` | 完成/1000 | 699 | 66.0666 | 65.9325 | 79.5664 | 92.9293 | 16.2267 |
+| IRSTD-1K | `w8m_diag4_pair_shared` | 进行中/806 | 694 | 65.9442 | 66.0148 | 79.4776 | 92.5926 | 14.1391 |
+| IRSTD-1K | `w8m_diag4_independent` | 进行中/277 | 251 | 64.5102 | 64.1935 | 78.4270 | 89.2256 | 30.0052 |
+| IRSTD-1K | `w8m_diag4_all_shared` | 进行中/28 | — | — | — | — | — | — |
+
+因此，新服务器上的 Mamba/W8M 实验结果已经有历史快照记录；本节补充了
+2026-07-13 停止前的最新完整结果和当时进行中的任务。停止前已完成 15/21
+个 W8M 组合，其余 6 个的训练均已停止，训练日志和 checkpoint 均保存在对应输出目录。
+
+## 19. 新服务器任务停止记录（2026-07-13）
+
+按最新调度要求，新服务器上的全部训练任务和 W8M/Experiment B 调度器已停止。
+停止前的 W8M/Mamba 结果已在第 18 节记录；所有 checkpoint、`metrics.jsonl`、
+`best_metrics.json` 和日志文件均保留，后续如需恢复可从 `latest.pth.tar` 继续。

@@ -204,3 +204,47 @@ NUAA 的 `sd_awgm`、`sd_pyramid` 进程被停止，但它们的输出目录和 
 AWGM 实验还会记录 H/V/D 方向权重、gate mean/std、alpha、A 与 A_guided norm；
 Pyramid 实验还会记录 P1–P4 norm、raw coefficient norm、delta norm、beta 和
 final/raw coefficient norm，用于判断模块是否真正工作或发生高频重复增强。
+
+## 11. 双服务器结果回填（2026-07-13）
+
+以下结果由两台服务器上的 `best_metrics.json` 直接回填；指标均为训练过程中
+最佳 epoch 的验证结果，`Fa` 使用科学计数法。226 服务器的 Experiment B 已完成
+除 NUAA `sd_awgm` 外的全部已安排任务；该任务在 epoch 43 为释放显卡而暂停，
+尚未到 epoch 100 的首次评估。新服务器的 NUDT `sd_raw` 仍在训练，当前约为
+epoch 822/1000，其余已启动的新服务器任务已完成。
+
+### 226 服务器
+
+| 数据集 | Variant | 状态 | Best epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | `sd_raw` | 完成 | 541 | 0.7731 | 0.7938 | 0.8721 | 0.9695 | 1.996e-5 |
+| NUAA-SIRST | `sd_awgm` | 暂停于 epoch 43 | — | — | — | — | — | — |
+| NUAA-SIRST | `sd_pyramid` | 完成 | 301 | 0.7583 | 0.7877 | 0.8625 | 0.9427 | 2.586e-5 |
+| NUAA-SIRST | `sd_full` | 完成 | 338 | 0.7770 | 0.7951 | 0.8745 | 0.9580 | 2.284e-5 |
+| NUDT-SIRST | `sd_raw` | 完成 | 166 | 0.8925 | 0.8921 | 0.9432 | 0.9799 | 5.400e-6 |
+| NUDT-SIRST | `sd_awgm` | 完成 | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 |
+| NUDT-SIRST | `sd_pyramid` | 完成 | 284 | 0.8833 | 0.8861 | 0.9380 | 0.9831 | 8.480e-6 |
+| NUDT-SIRST | `sd_full` | 完成 | 196 | 0.8832 | 0.8830 | 0.9380 | 0.9799 | 7.675e-6 |
+| IRSTD-1K | `sd_raw` | 完成 | 596 | 0.6510 | 0.6404 | 0.7886 | 0.9057 | 2.082e-5 |
+| IRSTD-1K | `sd_full` | 完成 | 680 | 0.6475 | 0.6396 | 0.7860 | 0.9091 | 1.674e-5 |
+
+### 新服务器
+
+| 数据集 | Variant | 状态 | Best epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | `sd_raw` | 完成 | 482 | 0.7652 | 0.7883 | 0.8670 | 0.9466 | 2.374e-5 |
+| NUAA-SIRST | `sd_awgm` | 完成 | 489 | 0.7799 | 0.7848 | 0.8764 | 0.9466 | 1.935e-5 |
+| NUDT-SIRST | `sd_raw` | 进行中（约 822/1000） | 382 | 0.8857 | 0.8856 | 0.9394 | 0.9884 | 8.526e-6 |
+
+目前按数据集的最高 mIoU 为：NUAA-SIRST 新服务器 `sd_awgm` 0.7799、
+NUDT-SIRST 226 服务器 `sd_awgm` 0.9058、IRSTD-1K 226 服务器 `sd_raw` 0.6510。
+
+## 12. 调度变更（2026-07-13）
+
+- 新服务器上的全部实验训练进程（W8M/Mamba 和 Experiment B）及两个调度器均已按要求停止；
+  输出目录、checkpoint、`metrics.jsonl` 和日志均保留，不删除已有结果。
+- 226 服务器在 GPU0 启动了 IRSTD-1K `sd_awgm`，输出目录为
+  `runs/experiment_b/IRSTD-1K/sd_awgm/seed42`，使用 1000 epoch、256×256、
+  batch size 4、seed 42、epoch 100 开始每 epoch 评估一次的统一配置。
+- 226 当前另有一个旧的 WULLE-A/W8M 实验在 GPU5 运行：
+  `IRSTD-1K/w8m_diag4_subband_shared`；其余 GPU 为空闲或仅有少量系统显存占用。
