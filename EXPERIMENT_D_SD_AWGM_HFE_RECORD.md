@@ -167,5 +167,6 @@ D2 将四尺度 Hard L2 Top-1 替换为 Soft Cosine Top-k；D3 只将浅层 Stag
 Experiment D 内部消融，不是新的主实验。
 
 完整代码改动、测试、复杂度、GPU/PID、输出目录和结果表见
-`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。正式执行顺序严格为 D2→D3；
-D3 只有在三个 D2 都完成 epoch 100 后首次评估且无 NaN/OOM 后才会启动。
+`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。原计划严格执行 D2→D3；按后续
+调度要求，D3 NUAA-SIRST 已于 2026-07-14 23:41 CST 提前使用空闲 GPU6 启动，
+其余两个 D3 仍等待三个 D2 完成 epoch 100 后首次评估且无 NaN/OOM。

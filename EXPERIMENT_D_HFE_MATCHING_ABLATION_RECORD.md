@@ -147,9 +147,9 @@ threshold=0.5
 三个任务均已完成真实数据首个训练 step，无 NaN/Inf、无 OOM。GPU0/3 上的 D1、
 GPU4 上的 Experiment C 均未停止或覆盖。
 
-### 8.2 Phase 2：D3 已进入门控队列
+### 8.2 Phase 2：D3 的 NUAA-SIRST 已提前启动
 
-D3 尚未启动。队列会等待三个 D2 均满足：
+原队列会等待三个 D2 均满足：
 
 ```text
 完成 epoch 100 后首次正式评估
@@ -158,8 +158,18 @@ best_metrics.json 正常生成
 无 OOM 或失败状态
 ```
 
-全局门槛通过后，D3 仍按 NUAA→IRSTD→NUDT 顺序使用空闲 GPU 启动；D3 不会
-抢占或停止 D2。输出目录分别为：
+2026-07-14 23:41 CST，按实验调度要求，将空闲 GPU6 直接用于 D3
+NUAA-SIRST，不再等待全局门槛。该例外只适用于 NUAA-SIRST；D3 的 IRSTD-1K
+和 NUDT-SIRST 仍留在原门控队列中。D3 不抢占或停止 D2，原调度器也会通过
+活动输出目录检查避免重复启动 NUAA-SIRST。
+
+| 数据集 | GPU | Wrapper PID | Python PID | 启动确认 | 状态 |
+|---|---:|---:|---:|---|---|
+| NUAA-SIRST | 6 | 573177 | 573179 | epoch 3，无 NaN/Inf、无 OOM | 训练中 |
+| IRSTD-1K | — | — | — | 等待三个 D2 通过门槛 | 门控队列 |
+| NUDT-SIRST | — | — | — | 等待三个 D2 通过门槛 | 门控队列 |
+
+输出目录分别为：
 
 ```text
 runs/experiment_d_ablation/D3_scaleaware/NUAA-SIRST/seed42
@@ -170,14 +180,15 @@ runs/experiment_d_ablation/D3_scaleaware/NUDT-SIRST/seed42
 ## 9. 结果表
 
 以下 D0 为已有基线，D1 为启动 D2/D3 时可用的最佳 checkpoint；D2/D3 尚未到
-epoch 100，暂时没有正式指标。
+epoch 100，暂时没有正式指标。D3 NUAA-SIRST 已提前启动，其他两个 D3 仍等待
+门控。
 
 | Dataset | ID | Model | Stage1/2 | Stage3/4 | Best epoch | mIoU | nIoU | F1 | Pd | Fa | 状态 |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|
 | NUAA | D0 | `sd_awgm` | None | None | 489 | 0.7799 | 0.7848 | 0.8764 | 0.9466 | 1.935e-5 | 已完成 |
 | NUAA | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 | 已完成1000 epoch |
 | NUAA | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | — | — | — | — | — | — | GPU1训练中 |
-| NUAA | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | — | — | — | — | — | — | 等待D2门槛 |
+| NUAA | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | — | — | — | — | — | — | GPU6训练中 |
 | NUDT | D0 | `sd_awgm` | None | None | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 已完成 |
 | NUDT | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 318 | 0.9429 | 0.9455 | 0.9706 | 0.9947 | 2.045e-6 | 训练中 |
 | NUDT | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | — | — | — | — | — | — | GPU5训练中 |
