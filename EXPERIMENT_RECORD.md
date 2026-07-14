@@ -298,3 +298,24 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 按最新调度要求，新服务器上的全部训练任务和 W8M/Experiment B 调度器已停止。
 停止前的 W8M/Mamba 结果已在第 18 节记录；所有 checkpoint、`metrics.jsonl`、
 `best_metrics.json` 和日志文件均保留，后续如需恢复可从 `latest.pth.tar` 继续。
+
+## 20. Experiment B 单解码器 IRSTD-1K 补录
+
+226 服务器 `DWTFreqNet_SINGLE_DECODER_B` 的 IRSTD-1K 单解码器实验均已训练到
+1000 epoch，以下为最佳 checkpoint（Fa 单位为 ×10^-6）：
+
+| 方案 | Best epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---:|---:|---:|---:|---:|---:|
+| `sd_raw` | 596 | 65.10 | 64.04 | 78.86 | 90.57 | 20.82 |
+| `sd_pyramid` | 632 | 64.77 | 64.46 | 78.62 | 89.90 | 16.21 |
+| `sd_awgm` | 894 | **65.61** | **64.77** | **79.24** | **90.91** | **15.37** |
+| `sd_full` | 680 | 64.75 | 63.96 | 78.60 | 90.91 | 16.74 |
+
+其中 `sd_awgm` 是这四个 IRSTD-1K 单解码器方案中 mIoU 最高的方案。
+
+## 21. Experiment C：SD-AWGM + Encoder-side LDRC
+
+Experiment C 的完整中文记录见 `EXPERIMENT_C_SD_AWGM_LDRC_RECORD.md`。该实验
+只在 Experiment B `sd_awgm` 编码特征侧增加 LDRC，使用独立分支和输出目录，未
+修改 Experiment B 的模型文件。已记录的最佳 mIoU 为：NUAA `0.7755`、NUDT
+`0.9564`、IRSTD-1K `0.6508`；对应基线和完整五项指标见该记录文件。
