@@ -107,11 +107,11 @@ THOP 不能准确统计 `torch.cdist` 和代码中直接完成的注意力矩阵
 | Dataset | Model | 状态 | Best epoch | mIoU | nIoU | F1 | Pd | Fa | Params | FLOPs | Latency |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | NUAA-SIRST | `sd_awgm` | 已有结果 | 489 | 0.7799 | 0.7848 | 0.8764 | 0.9466 | 1.935e-5 | 5.926M | 14.38G | 5.15ms |
-| NUAA-SIRST | `sd_awgm_hfe` | GPU1训练中 | — | — | — | — | — | — | 10.181M | 20.47G | 28.17ms |
+| NUAA-SIRST | `sd_awgm_hfe` | GPU1训练中（当前 epoch 981） | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 | 10.181M | 20.47G | 28.17ms |
 | NUDT-SIRST | `sd_awgm` | 已有结果 | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 5.926M | 14.38G | 5.15ms |
-| NUDT-SIRST | `sd_awgm_hfe` | GPU0训练中 | — | — | — | — | — | — | 10.181M | 20.47G | 28.17ms |
+| NUDT-SIRST | `sd_awgm_hfe` | GPU0训练中（当前 epoch 365） | 318 | 0.9429 | 0.9455 | 0.9706 | 0.9947 | 2.045e-6 | 10.181M | 20.47G | 28.17ms |
 | IRSTD-1K | `sd_awgm` | 已有结果 | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 | 5.926M | 14.38G | 5.15ms |
-| IRSTD-1K | `sd_awgm_hfe` | GPU3训练中 | — | — | — | — | — | — | 10.181M | 20.47G | 28.17ms |
+| IRSTD-1K | `sd_awgm_hfe` | GPU3训练中（当前 epoch 406） | 311 | 0.6488 | 0.6261 | 0.7870 | 0.9226 | 3.522e-5 | 10.181M | 20.47G | 28.17ms |
 
 ## 7. 输出目录
 
@@ -145,5 +145,16 @@ MAX_USED_MIB=1024 MAX_UTIL_PERCENT=5 SEED=42 \
 bash scripts/launch_experiment_d_queue.sh
 ```
 
-三个任务均使用 batch size 4、1000 epoch、epoch 100 开始每 epoch 评估一次，
-当前尚未到首次正式评估，因此没有阶段性 mIoU/nIoU/F1/Pd/Fa。
+三个任务均使用 batch size 4、1000 epoch、epoch 100 开始每 epoch 评估一次。
+
+### 8.1 阶段性结果快照（2026-07-14 22:18:22 CST）
+
+三项任务均已进入正式评估阶段；下表记录的是当前 `best_metrics.json` 中的最佳
+checkpoint，同时注明日志中的最新训练 epoch。由于三项任务尚未完成 1000 epoch，
+这些是阶段性结果，不应视为最终结果。
+
+| 数据集 | GPU | 最新 epoch | 当前最佳 epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| NUDT-SIRST | 0 | 365 | 318 | 0.9429 | 0.9455 | 0.9706 | 0.9947 | 2.045e-6 |
+| NUAA-SIRST | 1 | 981 | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 |
+| IRSTD-1K | 3 | 406 | 311 | 0.6488 | 0.6261 | 0.7870 | 0.9226 | 3.522e-5 |
