@@ -82,16 +82,22 @@ batch size 4、256×256 单步前向/反向也通过。
 
 ## 6. 正式实验结果
 
-表中 `sd_awgm` 为现有 Experiment B 对照结果；Experiment C 结果训练后回填。
+表中 `sd_awgm` 为现有 Experiment B 对照结果；Experiment C 结果按 2026-07-14
+在 226 服务器上的最新 checkpoint 回填。NUAA 已完成 1000 epoch，NUDT 和 IRSTD
+仍继续训练至 1000 epoch。
 
 | Dataset | Model | 状态 | Best epoch | mIoU | nIoU | F1 | Pd | Fa |
 |---|---|---|---:|---:|---:|---:|---:|---:|
 | NUAA-SIRST | `sd_awgm` | 已有结果 | 489 | 0.7799 | 0.7848 | 0.8764 | 0.9466 | 1.935e-5 |
-| NUAA-SIRST | `sd_awgm_ldrc` | 226 GPU3训练中 | — | — | — | — | — | — |
+| NUAA-SIRST | `sd_awgm_ldrc` | 已完成/1000 | 565 | **0.7755** | **0.7914** | **0.8736** | **0.9618** | **2.401e-5** |
 | NUDT-SIRST | `sd_awgm` | 已有结果 | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 |
-| NUDT-SIRST | `sd_awgm_ldrc` | 226 GPU2训练中 | — | — | — | — | — | — |
-| IRSTD-1K | `sd_awgm` | 226服务器训练中 | — | — | — | — | — | — |
-| IRSTD-1K | `sd_awgm_ldrc` | 226 GPU4训练中 | — | — | — | — | — | — |
+| NUDT-SIRST | `sd_awgm_ldrc` | 训练中/581 | 382 | **0.9564** | **0.9564** | **0.9777** | **0.9958** | **2.091e-6** |
+| IRSTD-1K | `sd_awgm` | 已有结果 | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 |
+| IRSTD-1K | `sd_awgm_ldrc` | 训练中/400 | 382 | **0.6508** | **0.6512** | **0.7885** | **0.9461** | **1.585e-5** |
+
+当前阶段性结论：NUDT-SIRST 上 `sd_awgm_ldrc` 已明显高于 `sd_awgm`；NUAA-SIRST
+和 IRSTD-1K 的最终结论需等对应任务完成 1000 epoch 后再确定。表中粗体为各行
+Experiment C 的最佳 checkpoint 指标，并非最后一个 epoch 的指标。
 
 ## 7. 输出目录
 
