@@ -336,3 +336,11 @@ High-Frequency Enhancement（HFE）。三项任务均在 226 服务器训练至 
 完整设计、复杂度、诊断统计和输出目录见
 `EXPERIMENT_D_SD_AWGM_HFE_RECORD.md`。以上结果会在三项任务完成 1000 epoch 后
 再更新为最终结果。
+
+## 23. Experiment D Matching 消融（D2 → D3）
+
+Experiment D 新增两个内部 matching 消融：D2 为四尺度 Soft Cosine Top-k，D3
+为浅层 Local Correlation Gate、深层 Soft Cosine Top-k。D2 三数据集已在 226
+服务器 GPU1/2/5 启动；D3 已进入门控队列，只有三个 D2 都完成 epoch 100 后首次
+正式评估且无 NaN/OOM 才会开始。完整记录见
+`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。
