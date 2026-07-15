@@ -1,4 +1,4 @@
-"""Complexity profile for Experiment D D0/D1/D2/D3 matching variants."""
+"""Complexity profile for Experiment D D0-D4 relation variants."""
 
 import argparse
 import json
@@ -25,6 +25,7 @@ MODEL_NAMES = (
     "sd_awgm_hfe",
     "sd_awgm_hfe_softcos",
     "sd_awgm_hfe_scaleaware",
+    "sd_awgm_hfe_nomatch",
 )
 
 
@@ -49,6 +50,13 @@ def make_model(name, mode):
         return DWTFreqNet_SingleDecoder_HFE_Ablation(
             config,
             hfe_ablation="d3_scaleaware",
+            mode=mode,
+            deepsuper=True,
+        )
+    if name == "sd_awgm_hfe_nomatch":
+        return DWTFreqNet_SingleDecoder_HFE_Ablation(
+            config,
+            hfe_ablation="d4_no_matching",
             mode=mode,
             deepsuper=True,
         )
@@ -110,6 +118,10 @@ def profile_one(name, device, warmup, repeats):
         parameter.numel()
         for parameter_name, parameter in model.named_parameters()
         if ".relation" in parameter_name
+        or (
+            parameter_name.startswith("decoder_hfe")
+            and ".matching" in parameter_name
+        )
     )
     flops = count_flops(model, sample)
     counts = transform_counts(model, sample)
@@ -185,6 +197,15 @@ def main():
         assert by_name[name]["idwt_calls"] == 4
     assert by_name["sd_awgm_hfe_softcos"]["hfe_parameters"] > 0
     assert by_name["sd_awgm_hfe_scaleaware"]["hfe_parameters"] > 0
+    assert by_name["sd_awgm_hfe_nomatch"]["hfe_parameters"] > 0
+    assert (
+        by_name["sd_awgm_hfe"]["relation_parameters"]
+        == by_name["sd_awgm_hfe_nomatch"]["relation_parameters"]
+    )
+    assert (
+        by_name["sd_awgm_hfe_softcos"]["relation_parameters"]
+        == by_name["sd_awgm_hfe_nomatch"]["relation_parameters"] + 8
+    )
     payload = {
         "input_shape": [1, 1, 256, 256],
         "device": str(device),

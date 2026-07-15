@@ -1,4 +1,4 @@
-"""Trainer for Experiment D decoder-HFE matching ablations D2 and D3."""
+"""Trainer for Experiment D decoder-HFE relation ablations D2, D3 and D4."""
 
 import argparse
 import json
@@ -41,12 +41,17 @@ VARIANT_IDENTITY = {
         "model_variant": "dwtfreqnet_single_decoder_hfe_scaleaware",
         "sd_variant": "sd_awgm_hfe_scaleaware",
     },
+    "d4_no_matching": {
+        "ablation_id": "D4",
+        "model_variant": "dwtfreqnet_single_decoder_hfe_nomatch",
+        "sd_variant": "sd_awgm_hfe_nomatch",
+    },
 }
 
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Train Experiment D HFE matching ablation D2 or D3"
+        description="Train Experiment D HFE relation ablation D2, D3 or D4"
     )
     parser.add_argument(
         "--hfe-ablation", required=True, choices=HFE_ABLATION_VARIANTS
@@ -170,6 +175,8 @@ def main():
 
     model = build_model("train", args.hfe_ablation).to(device)
     model.apply(init_weights)
+    for key, value in model.experiment_metadata.items():
+        setattr(args, key, value)
     total_parameters = sum(parameter.numel() for parameter in model.parameters())
     direction_parameters = parameter_count(model, ("dir_encoder",))
     awgm_parameters = parameter_count(model, ("stage_awgm",))

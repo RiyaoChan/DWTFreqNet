@@ -171,3 +171,15 @@ Experiment D 内部消融，不是新的主实验。
 调度要求，D3 NUAA-SIRST 已于 2026-07-14 23:41 CST 提前使用空闲 GPU6 启动；
 三个 D2 于 2026-07-15 00:59 CST 通过门槛后，D3 的 IRSTD-1K（GPU1）和
 NUDT-SIRST（GPU6）也已启动。
+
+## 10. Decoder HFE No-Explicit-Matching 消融（D4）
+
+D4 `sd_awgm_hfe_nomatch` 已在同一 Experiment D 消融分支实现。它保留原始 decoder
+低频特征参与 HFE 的 gate/value/project 融合，但四级均不计算 L2/Cosine 相似度、
+Top-1/Top-k、通道索引或高低频 `C×C` Matching 矩阵。D0–D3 模型文件和已有
+结果均未修改。
+
+D4 于 2026-07-15 22:28:16 CST 在 226 服务器正式启动：NUAA-SIRST 使用 GPU3，
+IRSTD-1K 使用 GPU4，NUDT-SIRST 使用 GPU5；三项均训练1000 epoch，从 epoch100
+起逐 epoch 评估。完整结构、测试、复杂度、PID、输出目录和结果表见
+`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。

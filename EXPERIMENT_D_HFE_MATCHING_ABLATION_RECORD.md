@@ -1,4 +1,4 @@
-# Experiment D：Decoder HFE Matching 消融记录（D2 → D3）
+# Experiment D：Decoder HFE Relation 消融记录（D2 → D4）
 
 ## 1. 实验定位
 
@@ -11,15 +11,18 @@
 | D1 | `sd_awgm_hfe` | Hard L2 Top-1 | Hard L2 Top-1 |
 | D2 | `sd_awgm_hfe_softcos` | Soft Cosine Top-k | Soft Cosine Top-k |
 | D3 | `sd_awgm_hfe_scaleaware` | Local Correlation Gate | Soft Cosine Top-k |
+| D4 | `sd_awgm_hfe_nomatch` | Direct Low Fusion | Direct Low Fusion |
 
 严格执行 `D2 → D3`：D2 先验证 L2/硬 Top-1 是否限制了泛化，D3 再只替换
-浅层 Stage 1/2 relation，验证浅层全局通道匹配是否造成背景误增强。
+浅层 Stage 1/2 relation，验证浅层全局通道匹配是否造成背景误增强。D1–D3 完成后
+再执行 D4，验证保留低频条件融合但删除全部显式通道 Matching 是否足够。
 
 ## 2. 代码基线与隔离
 
 - Repository：`RiyaoChan/DWTFreqNet`
 - 实际 base branch：`codex/experiment-d-sd-awgm-decoder-hfe`
 - 实际 base commit：`6fb19768dd7013aff536447b39652a44c1538912`
+- D4 开始时实际 HEAD：`14cfa930ec234aeda1b1d432390d49001794f52c`
 - 消融分支：`codex/experiment-d-hfe-matching-ablation-d2-d3`
 - 服务器独立目录：`/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_D_ABLATION`
 
@@ -32,10 +35,12 @@ tools/test_experiment_d_hfe_matching_ablation.py
 tools/profile_experiment_d_hfe_matching_ablation.py
 scripts/run_experiment_d_hfe_ablation.sh
 scripts/launch_experiment_d_hfe_ablation_queue.sh
+scripts/launch_experiment_d_d4.sh
+experiment_guide/EXPERIMENT_D_D4_NO_EXPLICIT_MATCHING_FOR_CODEX.md
 EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md
 ```
 
-D0/D1 的模型文件、训练入口、checkpoint 和输出目录均未修改。D2/D3 继承 D1
+D0/D1 的模型文件、训练入口、checkpoint 和输出目录均未修改。D2/D3/D4 继承 D1
 模型主路径，只替换 `decoder_hfe1–4`，输出写入独立的
 `runs/experiment_d_ablation/`。
 
@@ -190,14 +195,92 @@ runs/experiment_d_ablation/D3_scaleaware/NUDT-SIRST/seed42
 | NUAA | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 | 已完成1000 epoch |
 | NUAA | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 350 | 0.773369 | 0.782203 | 0.872203 | 0.973282 | 3.739e-5 | 已完成1000 epoch |
 | NUAA | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 549 | 0.776066 | 0.785939 | 0.873916 | 0.973282 | 3.211e-5 | 已完成1000 epoch |
+| NUAA | D4 | `sd_awgm_hfe_nomatch` | Direct Low Fusion | Direct Low Fusion | — | — | — | — | — | — | GPU3训练中 |
 | NUDT | D0 | `sd_awgm` | None | None | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 已完成 |
 | NUDT | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 694 | 0.943166 | 0.949027 | 0.970752 | 0.991534 | 4.343e-6 | 已完成1000 epoch |
 | NUDT | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 419 | 0.946951 | 0.947689 | 0.972753 | 0.990476 | 1.953e-6 | 已完成1000 epoch |
 | NUDT | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 513 | 0.947825 | 0.949940 | 0.973214 | 0.995767 | 1.540e-6 | 已完成1000 epoch |
+| NUDT | D4 | `sd_awgm_hfe_nomatch` | Direct Low Fusion | Direct Low Fusion | — | — | — | — | — | — | GPU5训练中 |
 | IRSTD | D0 | `sd_awgm` | None | None | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 | 已完成 |
 | IRSTD | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 556 | 0.657358 | 0.658863 | 0.793260 | 0.922559 | 1.395e-5 | 已完成1000 epoch |
 | IRSTD | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 464 | 0.658223 | 0.659029 | 0.793890 | 0.915825 | 1.704e-5 | 已完成1000 epoch |
 | IRSTD | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 735 | 0.657163 | 0.660729 | 0.793119 | 0.936027 | 1.782e-5 | 已完成1000 epoch |
+| IRSTD | D4 | `sd_awgm_hfe_nomatch` | Direct Low Fusion | Direct Low Fusion | — | — | — | — | — | — | GPU4训练中 |
 
-D2/D3 最终均训练至 1000 epoch；从 epoch 100 起每个 epoch 评估并按 mIoU 保存
-最佳 checkpoint。完成后再依据 D0→D1、D1→D2、D2→D3 顺序给出消融结论。
+D2/D3 最终均训练至 1000 epoch；D4 使用同一训练设置继续运行。从 epoch 100 起
+每个 epoch 评估并按 mIoU 保存最佳 checkpoint。D4 完成后再给出 D0→D4 完整结论。
+
+## 10. D4：No Explicit Matching
+
+D4 属于 Experiment D 内部消融，不建立 Experiment E。它保留当前 decoder 低频
+对高频的条件引导，但删除 L2/Cosine 相似度、Top-1/Top-k、argmin、通道索引和
+高低频 `C×C` Matching 矩阵。四个尺度均使用：
+
+```text
+high ─┐
+      ├─ concat ─ sigmoid(gate) × depthwise value ─ project ─ output
+low  ─┘
+```
+
+模型标识为 `dwtfreqnet_single_decoder_hfe_nomatch`，训练变体为
+`sd_awgm_hfe_nomatch`，命令行消融名为 `d4_no_matching`。四级 relation 均为
+`DirectFusionTransformation`，其余 SubbandSelectiveFusion、HFE Attention、FFN、
+方向残差头、beta 初值、IDWT、单解码器和深监督均与 D1 保持一致。
+
+### 10.1 参数公平性
+
+| Stage | 单个 D1 relation | 单个 D2 relation | 单个 D4 relation |
+|---:|---:|---:|---:|
+| 1 | 25,856 | 25,857 | 25,856 |
+| 2 | 100,864 | 100,865 | 100,864 |
+| 3 | 398,336 | 398,337 | 398,336 |
+| 4 | 398,336 | 398,337 | 398,336 |
+
+Attention 和 FFN 各自包含一个 relation，因此全模型 relation 参数量为：D1/D4
+均为 `1,846,784`，D2 为 `1,846,792`。D2 仅多 8 个可学习温度标量。
+
+### 10.2 测试结果
+
+| 检查项 | 结果 |
+|---|---|
+| CPU 小尺寸前向/反向 | 通过 |
+| CUDA `2×1×256×256` 训练/测试前向 | 通过，训练输出6张、测试输出1张 |
+| D4 `torch.cdist` / `torch.topk` monkeypatch | 完整前向通过，均未调用 |
+| D4 Matching 模块扫描 | 不存在 ChannelMatching、MatchingTransformation、SoftMatching 或 LocalGate |
+| beta 全置零退化 | 与 `sd_awgm` 最大绝对误差 `0` |
+| FP32 梯度 | gate/value/project、Attention、FFN、方向头、beta、AWGM、decoder、输出头均非零 |
+| CUDA AMP | 前后向无 NaN/Inf/OOM |
+| DWT/IDWT | `4/4` |
+| NUAA 真实数据 smoke | batch=4、256×256、单步前向/反向/optimizer.step 通过 |
+| run_config/checkpoint 元数据 | `explicit_channel_matching=false` 等字段逐项通过 |
+
+### 10.3 复杂度与速度
+
+RTX 3090，输入 `1×1×256×256`，warmup=5、repeat=20。THOP 不统计显式矩阵
+乘法，延迟和峰值显存为实测值。
+
+| ID | Model | Params | Relation params | THOP FLOPs | Latency | FPS | Infer peak | Train peak |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| D0 | `sd_awgm` | 5.926M | 0 | 14.38G | 8.13ms | 122.95 | 178.05MiB | 403.52MiB |
+| D1 | `sd_awgm_hfe` | 10.181M | 1,846,784 | 20.47G | 18.62ms | 53.69 | 260.61MiB | 932.08MiB |
+| D2 | `sd_awgm_hfe_softcos` | 10.181M | 1,846,792 | 20.47G | 20.17ms | 49.57 | 269.22MiB | 1009.85MiB |
+| D3 | `sd_awgm_hfe_scaleaware` | 10.225M | 1,890,820 | 20.77G | 18.98ms | 52.69 | 308.43MiB | 1097.26MiB |
+| D4 | `sd_awgm_hfe_nomatch` | 10.181M | 1,846,784 | 20.47G | 15.73ms | 63.58 | 347.72MiB | 1011.43MiB |
+
+D4 与 D1 参数和 THOP FLOPs完全一致；本次 D4 延迟比 D1 低约 `15.55%`。显存
+结果不预设方向：本轮 D4 的实测峰值高于 D1，保留原始测量值供复测。
+
+### 10.4 正式训练安排
+
+2026-07-15 22:28:16 CST 在 226 服务器同时启动三个 seed42 正式实验。全部使用
+batch=4、patch=256、1000 epoch、Adam、初始学习率 `1e-3`、CosineAnnealingLR、
+epoch100 起每个 epoch 评估、每20 epoch 保存，且从随机初始化开始。
+
+| 优先级 | 数据集 | GPU | Wrapper PID | Python PID | 输出目录 | 状态 |
+|---:|---|---:|---:|---:|---|---|
+| 1 | NUAA-SIRST | 3 | 1248701 | 1248711 | `runs/experiment_d_ablation/D4_no_matching/NUAA-SIRST/seed42` | 训练中（确认epoch24） |
+| 2 | IRSTD-1K | 4 | 1248780 | 1248790 | `runs/experiment_d_ablation/D4_no_matching/IRSTD-1K/seed42` | 训练中（确认epoch5） |
+| 3 | NUDT-SIRST | 5 | 1248865 | 1248871 | `runs/experiment_d_ablation/D4_no_matching/NUDT-SIRST/seed42` | 训练中（确认epoch7） |
+
+队列 PID 为 `1248687`，单任务初始显存约 `4.63GB`。D4 不加载 D0–D3 或原始
+DWTFreqNet checkpoint，也不覆盖已有 D1–D3 目录。指标将在 epoch100 后写入。

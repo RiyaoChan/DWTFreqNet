@@ -1,4 +1,4 @@
-"""Validation suite for Experiment D matching ablations D2 and D3."""
+"""Validation suite for Experiment D relation ablations D2, D3 and D4."""
 
 import argparse
 import inspect
@@ -13,9 +13,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from model.Config import get_DWTFreqNet_config
 from model.DWTFreqNet_SingleDecoder import DWTFreqNet_SingleDecoder
+from model.DWTFreqNet_SingleDecoder_HFE import MatchingTransformation
 from model.DWTFreqNet_SingleDecoder_HFE_Ablation import (
     D2_STAGE_CONFIG,
     D3_STAGE_CONFIG,
+    D4_STAGE_CONFIG,
+    DirectFusionTransformation,
     DWTFreqNet_SingleDecoder_HFE_Ablation,
     LocalCorrelationGate,
     SoftCosineTopKMatching,
@@ -81,6 +84,14 @@ def module_signature(module):
     }
 
 
+def count_trainable(module):
+    return sum(
+        parameter.numel()
+        for parameter in module.parameters()
+        if parameter.requires_grad
+    )
+
+
 def test_soft_matching(device):
     channels, topk, spatial = 16, 8, 5
     module = SoftCosineTopKMatching(channels, topk, 0.1).to(device)
@@ -133,7 +144,36 @@ def test_local_gate(device):
     return info
 
 
-def assert_variant_structure(d2, d3):
+def test_direct_fusion(device):
+    module = DirectFusionTransformation(16).to(device)
+    high = torch.randn(2, 16, 8, 8, device=device, requires_grad=True)
+    low = torch.randn(2, 16, 8, 8, device=device, requires_grad=True)
+    output, info = module(high, low)
+    assert tuple(output.shape) == tuple(high.shape)
+    assert info["relation_mode"] == "direct_low_fusion"
+    assert info["high_shape"] == info["low_shape"] == info["output_shape"]
+    assert 0.0 <= info["gate_min"] <= info["gate_max"] <= 1.0
+    assert all(
+        math.isfinite(info[key])
+        for key in (
+            "gate_mean",
+            "gate_std",
+            "high_norm",
+            "low_norm",
+            "output_norm",
+            "low_high_norm_ratio",
+        )
+    )
+    output.mean().backward()
+    assert high.grad is not None and torch.isfinite(high.grad).all()
+    assert low.grad is not None and torch.isfinite(low.grad).all()
+    for name in ("gate", "value", "project"):
+        assert has_nonzero_gradient(module, name)
+    return info
+
+
+def assert_variant_structure(d2, d3, d4):
+    fairness = {}
     for stage in range(1, 5):
         d2_refiner = getattr(d2, f"decoder_hfe{stage}")
         assert isinstance(d2_refiner.hfe.attn.relation, SoftMatchingTransformation)
@@ -143,6 +183,26 @@ def assert_variant_structure(d2, d3):
         expected = LocalCorrelationGate if stage <= 2 else SoftMatchingTransformation
         assert isinstance(d3_refiner.hfe.attn.relation, expected)
         assert isinstance(d3_refiner.hfe.ffn.relation, expected)
+
+        d4_refiner = getattr(d4, f"decoder_hfe{stage}")
+        assert isinstance(d4_refiner.hfe.attn.relation, DirectFusionTransformation)
+        assert isinstance(d4_refiner.hfe.ffn.relation, DirectFusionTransformation)
+        assert D4_STAGE_CONFIG[stage]["mode"] == "direct_low_fusion"
+        for branch in ("attn", "ffn"):
+            d2_relation = getattr(d2_refiner.hfe, branch).relation
+            d4_relation = getattr(d4_refiner.hfe, branch).relation
+            d1_parameters = count_trainable(
+                MatchingTransformation(D4_STAGE_CONFIG[stage]["channels"])
+            )
+            d2_parameters = count_trainable(d2_relation)
+            d4_parameters = count_trainable(d4_relation)
+            assert d1_parameters == d4_parameters
+            assert d2_parameters == d4_parameters + 1
+            fairness[f"stage{stage}_{branch}"] = {
+                "d1_parameters": d1_parameters,
+                "d2_parameters": d2_parameters,
+                "d4_parameters": d4_parameters,
+            }
 
     assert D2_STAGE_CONFIG[3] == D3_STAGE_CONFIG[3]
     assert D2_STAGE_CONFIG[4] == D3_STAGE_CONFIG[4]
@@ -162,23 +222,41 @@ def assert_variant_structure(d2, d3):
                 d3_relation.matching.log_temperature.detach().cpu(),
             )
             deep_signatures[f"stage{stage}_{branch}"] = d2_signature
-    return deep_signatures
+    forbidden_types = (
+        SoftCosineTopKMatching,
+        SoftMatchingTransformation,
+        LocalCorrelationGate,
+        MatchingTransformation,
+    )
+    for module in d4.modules():
+        assert not isinstance(module, forbidden_types)
+        class_name = type(module).__name__
+        assert "ChannelMatching" not in class_name
+        assert "MatchingTransformation" not in class_name
+    return deep_signatures, fairness
 
 
 def assert_model_forward(ablation, device, batch, size):
     model = build_model(ablation, "train", device).train()
     model.debug_tensors = True
     original_cdist = torch.cdist
+    original_topk = torch.topk
 
     def forbidden_cdist(*_args, **_kwargs):
-        raise AssertionError("torch.cdist is forbidden in D2/D3")
+        raise AssertionError("torch.cdist is forbidden in D2/D3/D4")
+
+    def forbidden_topk(*_args, **_kwargs):
+        raise AssertionError("D4 must not call torch.topk")
 
     torch.cdist = forbidden_cdist
+    if ablation == "d4_no_matching":
+        torch.topk = forbidden_topk
     try:
         with torch.no_grad():
             outputs = model(torch.randn(batch, 1, size, size, device=device))
     finally:
         torch.cdist = original_cdist
+        torch.topk = original_topk
 
     assert len(outputs) == 6
     assert all(tuple(item.shape) == (batch, 1, size, size) for item in outputs)
@@ -206,13 +284,25 @@ def assert_model_forward(ablation, device, batch, size):
                 assert info["similarity_shape"] == (batch, channels, channels)
                 assert info["topk_indices_shape"] == (batch, channels, 8)
                 assert info["topk_weights_shape"] == (batch, channels, 8)
-            else:
+            elif isinstance(relation, LocalCorrelationGate):
                 assert info["gate_shape"] == (
                     batch,
                     channels,
                     size // (2 ** stage),
                     size // (2 ** stage),
                 )
+            else:
+                expected = (
+                    batch,
+                    channels,
+                    size // (2 ** stage),
+                    size // (2 ** stage),
+                )
+                assert isinstance(relation, DirectFusionTransformation)
+                assert info["relation_mode"] == "direct_low_fusion"
+                assert info["high_shape"] == expected
+                assert info["low_shape"] == expected
+                assert info["output_shape"] == expected
             relation_shapes[f"stage{stage}_{branch}"] = info
 
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
@@ -301,7 +391,9 @@ def assert_gradients_and_amp(ablation, device, batch, size):
                 f"decoder_hfe{stage}.beta_d",
             ]
         )
-        if ablation == "d2_softcos_all" or stage >= 3:
+        if ablation == "d2_softcos_all" or (
+            ablation == "d3_scaleaware" and stage >= 3
+        ):
             required.extend(
                 [
                     f"decoder_hfe{stage}.hfe.attn.relation.matching.log_temperature",
@@ -354,15 +446,32 @@ def main():
     batch, size = (2, 256) if args.full else (1, 64)
     soft_info = test_soft_matching(device)
     gate_info = test_local_gate(device)
+    direct_info = test_direct_fusion(device)
 
     torch.manual_seed(42)
     d2_structure = build_model("d2_softcos_all", "test", device)
     torch.manual_seed(42)
     d3_structure = build_model("d3_scaleaware", "test", device)
-    deep_signatures = assert_variant_structure(d2_structure, d3_structure)
+    torch.manual_seed(42)
+    d4_structure = build_model("d4_no_matching", "test", device)
+    deep_signatures, fairness = assert_variant_structure(
+        d2_structure, d3_structure, d4_structure
+    )
     assert d2_structure.experiment_metadata["ablation_id"] == "D2"
     assert d3_structure.experiment_metadata["ablation_id"] == "D3"
-    del d2_structure, d3_structure
+    d4_metadata = d4_structure.experiment_metadata
+    assert d4_metadata["ablation_id"] == "D4"
+    assert d4_metadata["explicit_channel_matching"] is False
+    assert d4_metadata["channel_similarity_matrix"] is False
+    assert d4_metadata["channel_candidate_selection"] is False
+    assert d4_metadata["direct_fusion_uses_raw_low"] is True
+    assert d4_metadata["hfe_topk"] is None
+    assert d4_metadata["hfe_initial_temperature"] is None
+    assert all(
+        d4_metadata[f"stage{stage}_relation"] == "direct_low_fusion"
+        for stage in range(1, 5)
+    )
+    del d2_structure, d3_structure, d4_structure
     if device.type == "cuda":
         torch.cuda.empty_cache()
 
@@ -373,15 +482,27 @@ def main():
 
     forwards = {
         ablation: assert_model_forward(ablation, device, batch, size)
-        for ablation in ("d2_softcos_all", "d3_scaleaware")
+        for ablation in (
+            "d2_softcos_all",
+            "d3_scaleaware",
+            "d4_no_matching",
+        )
     }
     regressions = {
         ablation: assert_zero_beta_regression(ablation, device, size)
-        for ablation in ("d2_softcos_all", "d3_scaleaware")
+        for ablation in (
+            "d2_softcos_all",
+            "d3_scaleaware",
+            "d4_no_matching",
+        )
     }
     gradients = {
         ablation: assert_gradients_and_amp(ablation, device, batch, size)
-        for ablation in ("d2_softcos_all", "d3_scaleaware")
+        for ablation in (
+            "d2_softcos_all",
+            "d3_scaleaware",
+            "d4_no_matching",
+        )
     }
 
     print(
@@ -393,11 +514,15 @@ def main():
                 "input_shape": [batch, 1, size, size],
                 "soft_matching": soft_info,
                 "local_gate": gate_info,
+                "direct_fusion": direct_info,
                 "deep_stage_signatures": deep_signatures,
+                "relation_parameter_fairness": fairness,
                 "forwards": forwards,
                 "zero_beta_regressions": regressions,
                 "gradients_amp": gradients,
                 "torch_cdist_forbidden": True,
+                "d4_torch_topk_forbidden": True,
+                "d4_matching_modules_absent": True,
                 "dwt_idwt": {"dwt": 4, "idwt": 4},
             },
             ensure_ascii=False,

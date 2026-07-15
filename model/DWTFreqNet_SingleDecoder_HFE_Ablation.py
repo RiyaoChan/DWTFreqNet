@@ -1,8 +1,10 @@
-"""Experiment D matching ablations for decoder-side HFE.
+"""Experiment D relation ablations for decoder-side HFE.
 
 D2 replaces hard L2 Top-1 matching at all four scales with differentiable
 Soft Cosine Top-k matching.  D3 keeps the same deep relation modules at stages
-3/4 and replaces only stages 1/2 with a local correlation gate.
+3/4 and replaces only stages 1/2 with a local correlation gate.  D4 removes
+explicit high/low channel matching while retaining direct low-conditioned
+fusion at every scale.
 """
 
 import math
@@ -23,7 +25,12 @@ from model.DWTFreqNet_SingleDecoder_HFE import (
 EXPERIMENT_D_HFE_ABLATION_BASE_COMMIT = (
     "6fb19768dd7013aff536447b39652a44c1538912"
 )
-HFE_ABLATION_VARIANTS = ("d2_softcos_all", "d3_scaleaware")
+EXPERIMENT_D_D4_BASE_COMMIT = "14cfa930ec234aeda1b1d432390d49001794f52c"
+HFE_ABLATION_VARIANTS = (
+    "d2_softcos_all",
+    "d3_scaleaware",
+    "d4_no_matching",
+)
 
 D2_STAGE_CONFIG = {
     1: {"mode": "soft_cosine_topk", "channels": 64, "num_heads": 1,
@@ -43,6 +50,19 @@ D3_STAGE_CONFIG = {
         "topk": 8, "temperature": 0.1},
     4: {"mode": "soft_cosine_topk", "channels": 256, "num_heads": 4,
         "topk": 8, "temperature": 0.1},
+}
+
+D4_STAGE_CONFIG = {
+    1: {"mode": "direct_low_fusion", "channels": 64, "num_heads": 1},
+    2: {"mode": "direct_low_fusion", "channels": 128, "num_heads": 2},
+    3: {"mode": "direct_low_fusion", "channels": 256, "num_heads": 4},
+    4: {"mode": "direct_low_fusion", "channels": 256, "num_heads": 4},
+}
+
+HFE_ABLATION_STAGE_CONFIGS = {
+    "d2_softcos_all": D2_STAGE_CONFIG,
+    "d3_scaleaware": D3_STAGE_CONFIG,
+    "d4_no_matching": D4_STAGE_CONFIG,
 }
 
 
@@ -202,6 +222,74 @@ class SoftMatchingTransformation(nn.Module):
         return output, info
 
 
+class DirectFusionTransformation(nn.Module):
+    """Low-conditioned fusion without explicit channel matching."""
+
+    def __init__(self, channels):
+        super().__init__()
+        self.channels = int(channels)
+        combined = self.channels * 2
+        self.gate = nn.Conv2d(combined, combined, 1)
+        self.value = nn.Conv2d(
+            combined,
+            combined,
+            3,
+            padding=1,
+            groups=combined,
+            bias=False,
+        )
+        self.project = nn.Conv2d(combined, self.channels, 1, bias=False)
+        self.record_statistics = True
+        self.last_info = None
+
+    @staticmethod
+    def _rms(tensor):
+        return float(
+            tensor.detach().float().square().mean().sqrt().cpu()
+        )
+
+    def forward(self, x, perception):
+        if x.shape != perception.shape:
+            raise RuntimeError(
+                "DirectFusionTransformation requires equal shapes, got "
+                f"{tuple(x.shape)} and {tuple(perception.shape)}"
+            )
+        if x.shape[1] != self.channels:
+            raise RuntimeError(
+                f"Expected {self.channels} channels, got {x.shape[1]}"
+            )
+
+        combined = torch.cat([x, perception], dim=1)
+        gate = torch.sigmoid(self.gate(combined))
+        value = self.value(combined)
+        output = self.project(gate * value)
+        info = {
+            "input_shape": tuple(x.shape),
+            "high_shape": tuple(x.shape),
+            "low_shape": tuple(perception.shape),
+            "output_shape": tuple(output.shape),
+            "relation_mode": "direct_low_fusion",
+        }
+        if self.record_statistics:
+            detached_gate = gate.detach().float()
+            high_norm = self._rms(x)
+            low_norm = self._rms(perception)
+            info.update(
+                {
+                    "gate_mean": float(detached_gate.mean().cpu()),
+                    "gate_std": float(detached_gate.std().cpu()),
+                    "gate_min": float(detached_gate.min().cpu()),
+                    "gate_max": float(detached_gate.max().cpu()),
+                    "high_norm": high_norm,
+                    "low_norm": low_norm,
+                    "output_norm": self._rms(output),
+                    "low_high_norm_ratio": low_norm / (high_norm + 1e-12),
+                }
+            )
+        self.last_info = info
+        return output, info
+
+
 class LocalCorrelationGate(nn.Module):
     def __init__(self, channels):
         super().__init__()
@@ -282,6 +370,8 @@ def build_relation_module(mode, channels, topk=8, temperature=0.1):
         )
     if mode == "local_correlation_gate":
         return LocalCorrelationGate(channels=channels)
+    if mode == "direct_low_fusion":
+        return DirectFusionTransformation(channels=channels)
     raise ValueError(f"Unknown HFE relation mode: {mode}")
 
 
@@ -498,7 +588,7 @@ class AblationDecoderHFERefiner(nn.Module):
 
 
 class DWTFreqNet_SingleDecoder_HFE_Ablation(DWTFreqNet_SingleDecoder_HFE):
-    """Isolated D2/D3 variants; D0 and D1 source modules remain untouched."""
+    """Isolated D2/D3/D4 variants; D0 and D1 modules remain untouched."""
 
     def __init__(
         self,
@@ -526,10 +616,7 @@ class DWTFreqNet_SingleDecoder_HFE_Ablation(DWTFreqNet_SingleDecoder_HFE):
             deepsuper=deepsuper,
         )
         self.hfe_ablation = hfe_ablation
-        self.stage_config = (
-            D2_STAGE_CONFIG if hfe_ablation == "d2_softcos_all"
-            else D3_STAGE_CONFIG
-        )
+        self.stage_config = HFE_ABLATION_STAGE_CONFIGS[hfe_ablation]
         for stage in range(1, 5):
             cfg = self.stage_config[stage]
             setattr(
@@ -548,23 +635,36 @@ class DWTFreqNet_SingleDecoder_HFE_Ablation(DWTFreqNet_SingleDecoder_HFE):
         self.experiment_group = "experiment_d"
         self.experiment_type = "ablation"
         self.ablation_axis = "decoder_hfe_matching"
-        self.model_base_commit = EXPERIMENT_D_HFE_ABLATION_BASE_COMMIT
         if hfe_ablation == "d2_softcos_all":
+            self.model_base_commit = EXPERIMENT_D_HFE_ABLATION_BASE_COMMIT
             self.ablation_id = "D2"
             self.model_variant = "dwtfreqnet_single_decoder_hfe_softcos"
             self.sd_variant = "sd_awgm_hfe_softcos"
             self.decoder_hfe_matching = "soft_cosine_topk_all_scales"
-        else:
+        elif hfe_ablation == "d3_scaleaware":
+            self.model_base_commit = EXPERIMENT_D_HFE_ABLATION_BASE_COMMIT
             self.ablation_id = "D3"
             self.model_variant = "dwtfreqnet_single_decoder_hfe_scaleaware"
             self.sd_variant = "sd_awgm_hfe_scaleaware"
             self.decoder_hfe_matching = (
                 "local_correlation_gate_shallow_soft_cosine_topk_deep"
             )
+        else:
+            self.model_base_commit = EXPERIMENT_D_D4_BASE_COMMIT
+            self.ablation_id = "D4"
+            self.model_variant = "dwtfreqnet_single_decoder_hfe_nomatch"
+            self.sd_variant = "sd_awgm_hfe_nomatch"
+            self.decoder_hfe_matching = (
+                "direct_low_fusion_no_explicit_matching"
+            )
         self.directional_pyramid = False
         self.second_dwt = False
         self.ldrc = False
         self.mamba = False
+        if hfe_ablation == "d4_no_matching":
+            self.coefficient_mode = (
+                "aligned_raw_plus_nomatch_hfe_directional_residual"
+            )
 
     @property
     def experiment_metadata(self):
@@ -581,10 +681,32 @@ class DWTFreqNet_SingleDecoder_HFE_Ablation(DWTFreqNet_SingleDecoder_HFE):
                     str(stage): cfg["mode"]
                     for stage, cfg in self.stage_config.items()
                 },
-                "hfe_topk": 8,
-                "hfe_initial_temperature": 0.1,
+                "explicit_channel_matching": (
+                    self.hfe_ablation != "d4_no_matching"
+                ),
             }
         )
+        if self.hfe_ablation in ("d2_softcos_all", "d3_scaleaware"):
+            metadata.update(
+                {
+                    "hfe_topk": 8,
+                    "hfe_initial_temperature": 0.1,
+                }
+            )
+        else:
+            metadata.update(
+                {
+                    "hfe_topk": None,
+                    "hfe_initial_temperature": None,
+                    "direct_fusion_uses_raw_low": True,
+                    "channel_similarity_matrix": False,
+                    "channel_candidate_selection": False,
+                    **{
+                        f"stage{stage}_relation": cfg["mode"]
+                        for stage, cfg in self.stage_config.items()
+                    },
+                }
+            )
         return metadata
 
 
@@ -595,8 +717,12 @@ __all__ = [
     "AblationFFN",
     "D2_STAGE_CONFIG",
     "D3_STAGE_CONFIG",
+    "D4_STAGE_CONFIG",
+    "DirectFusionTransformation",
     "DWTFreqNet_SingleDecoder_HFE_Ablation",
+    "EXPERIMENT_D_D4_BASE_COMMIT",
     "EXPERIMENT_D_HFE_ABLATION_BASE_COMMIT",
+    "HFE_ABLATION_STAGE_CONFIGS",
     "HFE_ABLATION_VARIANTS",
     "LocalCorrelationGate",
     "SoftCosineTopKMatching",

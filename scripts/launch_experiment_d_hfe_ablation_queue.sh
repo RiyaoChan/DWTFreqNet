@@ -26,6 +26,7 @@ variant_dir() {
   case "$1" in
     d2_softcos_all) printf 'D2_softcos_all' ;;
     d3_scaleaware) printf 'D3_scaleaware' ;;
+    d4_no_matching) printf 'D4_no_matching' ;;
     *) return 2 ;;
   esac
 }
@@ -34,6 +35,7 @@ sd_variant() {
   case "$1" in
     d2_softcos_all) printf 'sd_awgm_hfe_softcos' ;;
     d3_scaleaware) printf 'sd_awgm_hfe_scaleaware' ;;
+    d4_no_matching) printf 'sd_awgm_hfe_nomatch' ;;
     *) return 2 ;;
   esac
 }
@@ -42,6 +44,7 @@ ablation_id() {
   case "$1" in
     d2_softcos_all) printf 'D2' ;;
     d3_scaleaware) printf 'D3' ;;
+    d4_no_matching) printf 'D4' ;;
     *) return 2 ;;
   esac
 }
@@ -172,6 +175,12 @@ done
 # Phase 2: D3 becomes eligible only after the D2 usability barrier passes.
 for dataset in "${datasets[@]}"; do
   launch_task d3_scaleaware "$dataset"
+done
+
+# Phase 3: D4 is an independent no-explicit-matching comparison. D1-D3 are
+# already complete in the formal campaign, so D4 can use any remaining idle GPU.
+for dataset in "${datasets[@]}"; do
+  launch_task d4_no_matching "$dataset"
 done
 
 for gpu in "${!scheduler_pid_by_gpu[@]}"; do

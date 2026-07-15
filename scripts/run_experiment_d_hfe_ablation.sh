@@ -22,6 +22,10 @@ case "$HFE_ABLATION" in
     ABLATION_DIR="D3_scaleaware"
     SD_VARIANT="sd_awgm_hfe_scaleaware"
     ;;
+  d4_no_matching)
+    ABLATION_DIR="D4_no_matching"
+    SD_VARIANT="sd_awgm_hfe_nomatch"
+    ;;
   *)
     echo "Unsupported HFE ablation: $HFE_ABLATION" >&2
     exit 2
