@@ -343,6 +343,6 @@ Experiment D 新增两个内部 matching 消融：D2 为四尺度 Soft Cosine To
 为浅层 Local Correlation Gate、深层 Soft Cosine Top-k。D2 三数据集已在 226
 服务器 GPU1/2/5 启动。按后续调度要求，D3 NUAA-SIRST 已于 2026-07-14 23:41
 CST 提前使用空闲 GPU6 启动。三个 D2 于 2026-07-15 00:59 CST 通过首次评估
-门槛后，D3 的 IRSTD-1K（GPU1）和 NUDT-SIRST（GPU6）也已启动。当前 D2 NUAA
-和 D3 NUAA 已完成 1000 epoch，其余四项继续训练。当前快照和进程信息见
+门槛后，D3 的 IRSTD-1K（GPU1）和 NUDT-SIRST（GPU6）也已启动。目前 D1、D2、
+D3 的三个数据集组合均已完成 1000 epoch。最终快照和进程信息见
 `EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。
