@@ -342,6 +342,7 @@ High-Frequency Enhancement（HFE）。三项任务均在 226 服务器训练至 
 Experiment D 新增两个内部 matching 消融：D2 为四尺度 Soft Cosine Top-k，D3
 为浅层 Local Correlation Gate、深层 Soft Cosine Top-k。D2 三数据集已在 226
 服务器 GPU1/2/5 启动。按后续调度要求，D3 NUAA-SIRST 已于 2026-07-14 23:41
-CST 提前使用空闲 GPU6 启动并确认完成 epoch 3；D3 的 IRSTD-1K 与 NUDT-SIRST
-仍在门控队列中，等待三个 D2 都完成 epoch 100 后首次正式评估且无 NaN/OOM。
-完整记录见 `EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。
+CST 提前使用空闲 GPU6 启动。三个 D2 于 2026-07-15 00:59 CST 通过首次评估
+门槛后，D3 的 IRSTD-1K（GPU1）和 NUDT-SIRST（GPU6）也已启动。当前 D2 NUAA
+和 D3 NUAA 已完成 1000 epoch，其余四项继续训练。当前快照和进程信息见
+`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。

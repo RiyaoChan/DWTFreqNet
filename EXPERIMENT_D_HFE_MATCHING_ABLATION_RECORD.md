@@ -140,14 +140,15 @@ threshold=0.5
 
 | 优先级 | 数据集 | GPU | Wrapper PID | Python PID | 状态 | 输出目录 |
 |---:|---|---:|---:|---:|---|---|
-| 1 | NUAA-SIRST | 1 | 564242 | 564252 | 训练中 | `runs/experiment_d_ablation/D2_softcos_all/NUAA-SIRST/seed42` |
+| 1 | NUAA-SIRST | 1 | 564242 | 564252 | 已完成1000 epoch | `runs/experiment_d_ablation/D2_softcos_all/NUAA-SIRST/seed42` |
 | 2 | IRSTD-1K | 2 | 564328 | 564338 | 训练中 | `runs/experiment_d_ablation/D2_softcos_all/IRSTD-1K/seed42` |
 | 3 | NUDT-SIRST | 5 | 564426 | 564435 | 训练中 | `runs/experiment_d_ablation/D2_softcos_all/NUDT-SIRST/seed42` |
 
-三个任务均已完成真实数据首个训练 step，无 NaN/Inf、无 OOM。GPU0/3 上的 D1、
-GPU4 上的 Experiment C 均未停止或覆盖。
+三个任务均已完成真实数据首个训练 step，无 NaN/Inf、无 OOM。D2 NUAA 已完成
+1000 epoch；D2 IRSTD 当前约 epoch 562，D2 NUDT 当前约 epoch 490。GPU0/3
+上的 D1、GPU4 上的 Experiment C 均未停止或覆盖。
 
-### 8.2 Phase 2：D3 的 NUAA-SIRST 已提前启动
+### 8.2 Phase 2：D3 三数据集已启动
 
 原队列会等待三个 D2 均满足：
 
@@ -159,15 +160,16 @@ best_metrics.json 正常生成
 ```
 
 2026-07-14 23:41 CST，按实验调度要求，将空闲 GPU6 直接用于 D3
-NUAA-SIRST，不再等待全局门槛。该例外只适用于 NUAA-SIRST；D3 的 IRSTD-1K
-和 NUDT-SIRST 仍留在原门控队列中。D3 不抢占或停止 D2，原调度器也会通过
-活动输出目录检查避免重复启动 NUAA-SIRST。
+NUAA-SIRST，不再等待全局门槛。随后三个 D2 在 2026-07-15 00:59 CST
+通过 epoch 100 首次评估、best_metrics、NaN/Inf 和 OOM 门槛，队列继续启动
+D3 的 IRSTD-1K（GPU1）和 NUDT-SIRST（GPU6）。D3 不抢占或停止其他实验，
+并通过活动输出目录检查跳过已在运行或已完成的 NUAA 任务。
 
 | 数据集 | GPU | Wrapper PID | Python PID | 启动确认 | 状态 |
 |---|---:|---:|---:|---|---|
-| NUAA-SIRST | 6 | 573177 | 573179 | epoch 3，无 NaN/Inf、无 OOM | 训练中 |
-| IRSTD-1K | — | — | — | 等待三个 D2 通过门槛 | 门控队列 |
-| NUDT-SIRST | — | — | — | 等待三个 D2 通过门槛 | 门控队列 |
+| NUAA-SIRST | 6 | 573177 | 573179 | 已完成1000 epoch，best epoch 549 | 已完成 |
+| IRSTD-1K | 1 | 752866 | 752874 | 当前 epoch 189，无 NaN/Inf、无 OOM | 训练中 |
+| NUDT-SIRST | 6 | 755891 | 755897 | 当前 epoch 181，无 NaN/Inf、无 OOM | 训练中 |
 
 输出目录分别为：
 
@@ -179,24 +181,23 @@ runs/experiment_d_ablation/D3_scaleaware/NUDT-SIRST/seed42
 
 ## 9. 结果表
 
-以下 D0 为已有基线，D1 为启动 D2/D3 时可用的最佳 checkpoint；D2/D3 尚未到
-epoch 100，暂时没有正式指标。D3 NUAA-SIRST 已提前启动，其他两个 D3 仍等待
-门控。
+以下 D0 为已有基线，D1 为启动 D2/D3 时可用的最佳 checkpoint；D2/D3 的指标
+为当前 `best_metrics.json` 快照，尚未完成的任务会继续更新。
 
 | Dataset | ID | Model | Stage1/2 | Stage3/4 | Best epoch | mIoU | nIoU | F1 | Pd | Fa | 状态 |
 |---|---|---|---|---|---:|---:|---:|---:|---:|---:|---|
 | NUAA | D0 | `sd_awgm` | None | None | 489 | 0.7799 | 0.7848 | 0.8764 | 0.9466 | 1.935e-5 | 已完成 |
 | NUAA | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 | 已完成1000 epoch |
-| NUAA | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | — | — | — | — | — | — | GPU1训练中 |
-| NUAA | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | — | — | — | — | — | — | GPU6训练中 |
+| NUAA | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 350 | 0.773369 | 0.782203 | 0.872203 | 0.973282 | 3.739e-5 | 已完成1000 epoch |
+| NUAA | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 549 | 0.776066 | 0.785939 | 0.873916 | 0.973282 | 3.211e-5 | 已完成1000 epoch |
 | NUDT | D0 | `sd_awgm` | None | None | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 已完成 |
 | NUDT | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 318 | 0.9429 | 0.9455 | 0.9706 | 0.9947 | 2.045e-6 | 训练中 |
-| NUDT | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | — | — | — | — | — | — | GPU5训练中 |
-| NUDT | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | — | — | — | — | — | — | 等待D2门槛 |
+| NUDT | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 419 | 0.946951 | 0.947689 | 0.972753 | 0.990476 | 1.953e-6 | GPU5训练中（当前约490） |
+| NUDT | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 178 | 0.920482 | 0.931020 | 0.958595 | 0.992593 | 1.069e-5 | GPU6训练中（当前约181） |
 | IRSTD | D0 | `sd_awgm` | None | None | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 | 已完成 |
 | IRSTD | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 498 | 0.6517 | 0.6543 | 0.7891 | 0.9394 | 2.118e-5 | 训练中 |
-| IRSTD | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | — | — | — | — | — | — | GPU2训练中 |
-| IRSTD | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | — | — | — | — | — | — | 等待D2门槛 |
+| IRSTD | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 464 | 0.658223 | 0.659029 | 0.793890 | 0.915825 | 1.704e-5 | GPU2训练中（当前约562） |
+| IRSTD | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 189 | 0.644652 | 0.627979 | 0.783938 | 0.902357 | 2.156e-5 | GPU1训练中（当前约189） |
 
 D2/D3 最终均训练至 1000 epoch；从 epoch 100 起每个 epoch 评估并按 mIoU 保存
 最佳 checkpoint。完成后再依据 D0→D1、D1→D2、D2→D3 顺序给出消融结论。
