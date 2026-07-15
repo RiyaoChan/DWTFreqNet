@@ -145,7 +145,7 @@ threshold=0.5
 | 3 | NUDT-SIRST | 5 | 564426 | 564435 | 训练中 | `runs/experiment_d_ablation/D2_softcos_all/NUDT-SIRST/seed42` |
 
 三个任务均已完成真实数据首个训练 step，无 NaN/Inf、无 OOM。D2 NUAA 已完成
-1000 epoch；D2 IRSTD 当前约 epoch 562，D2 NUDT 当前约 epoch 490。GPU0/3
+1000 epoch；D2 IRSTD 当前约 epoch 801，D2 NUDT 当前约 epoch 680。GPU0/3
 上的 D1、GPU4 上的 Experiment C 均未停止或覆盖。
 
 ### 8.2 Phase 2：D3 三数据集已启动
@@ -192,12 +192,12 @@ runs/experiment_d_ablation/D3_scaleaware/NUDT-SIRST/seed42
 | NUAA | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 549 | 0.776066 | 0.785939 | 0.873916 | 0.973282 | 3.211e-5 | 已完成1000 epoch |
 | NUDT | D0 | `sd_awgm` | None | None | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 已完成 |
 | NUDT | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 694 | 0.943166 | 0.949027 | 0.970752 | 0.991534 | 4.343e-6 | GPU0训练中（当前约919） |
-| NUDT | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 419 | 0.946951 | 0.947689 | 0.972753 | 0.990476 | 1.953e-6 | GPU5训练中（当前约490） |
-| NUDT | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 178 | 0.920482 | 0.931020 | 0.958595 | 0.992593 | 1.069e-5 | GPU6训练中（当前约181） |
+| NUDT | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 419 | 0.946951 | 0.947689 | 0.972753 | 0.990476 | 1.953e-6 | GPU5训练中（当前约680） |
+| NUDT | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 360 | 0.942919 | 0.946377 | 0.970621 | 0.994709 | 2.987e-6 | GPU6训练中（当前约381） |
 | IRSTD | D0 | `sd_awgm` | None | None | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 | 已完成 |
 | IRSTD | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 556 | 0.657358 | 0.658863 | 0.793260 | 0.922559 | 1.395e-5 | 已完成1000 epoch |
-| IRSTD | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 464 | 0.658223 | 0.659029 | 0.793890 | 0.915825 | 1.704e-5 | GPU2训练中（当前约562） |
-| IRSTD | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 189 | 0.644652 | 0.627979 | 0.783938 | 0.902357 | 2.156e-5 | GPU1训练中（当前约189） |
+| IRSTD | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 464 | 0.658223 | 0.659029 | 0.793890 | 0.915825 | 1.704e-5 | GPU2训练中（当前约801） |
+| IRSTD | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 189 | 0.644652 | 0.627979 | 0.783938 | 0.902357 | 2.156e-5 | GPU1训练中（当前约431） |
 
 D2/D3 最终均训练至 1000 epoch；从 epoch 100 起每个 epoch 评估并按 mIoU 保存
 最佳 checkpoint。完成后再依据 D0→D1、D1→D2、D2→D3 顺序给出消融结论。
