@@ -191,11 +191,11 @@ runs/experiment_d_ablation/D3_scaleaware/NUDT-SIRST/seed42
 | NUAA | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 350 | 0.773369 | 0.782203 | 0.872203 | 0.973282 | 3.739e-5 | 已完成1000 epoch |
 | NUAA | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 549 | 0.776066 | 0.785939 | 0.873916 | 0.973282 | 3.211e-5 | 已完成1000 epoch |
 | NUDT | D0 | `sd_awgm` | None | None | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 已完成 |
-| NUDT | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 318 | 0.9429 | 0.9455 | 0.9706 | 0.9947 | 2.045e-6 | 训练中 |
+| NUDT | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 694 | 0.943166 | 0.949027 | 0.970752 | 0.991534 | 4.343e-6 | GPU0训练中（当前约919） |
 | NUDT | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 419 | 0.946951 | 0.947689 | 0.972753 | 0.990476 | 1.953e-6 | GPU5训练中（当前约490） |
 | NUDT | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 178 | 0.920482 | 0.931020 | 0.958595 | 0.992593 | 1.069e-5 | GPU6训练中（当前约181） |
 | IRSTD | D0 | `sd_awgm` | None | None | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 | 已完成 |
-| IRSTD | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 498 | 0.6517 | 0.6543 | 0.7891 | 0.9394 | 2.118e-5 | 训练中 |
+| IRSTD | D1 | `sd_awgm_hfe` | Hard L2 | Hard L2 | 556 | 0.657358 | 0.658863 | 0.793260 | 0.922559 | 1.395e-5 | 已完成1000 epoch |
 | IRSTD | D2 | `sd_awgm_hfe_softcos` | Soft Cosine | Soft Cosine | 464 | 0.658223 | 0.659029 | 0.793890 | 0.915825 | 1.704e-5 | GPU2训练中（当前约562） |
 | IRSTD | D3 | `sd_awgm_hfe_scaleaware` | Correlation Gate | Soft Cosine | 189 | 0.644652 | 0.627979 | 0.783938 | 0.902357 | 2.156e-5 | GPU1训练中（当前约189） |
 
