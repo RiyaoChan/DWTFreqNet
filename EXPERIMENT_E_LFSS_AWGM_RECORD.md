@@ -30,6 +30,8 @@ IDWT 和单 Wavelet Decoder。
 - 基础分支：`codex/experiment-b-single-decoder-directional-pyramid`
 - 实际基础 HEAD：`435ab1827ecee4c6b83b669789bb9833a5fd5320`
 - Experiment E 分支：`codex/experiment-e-lfss-before-awgm`
+- 实现与正式启动提交：`d36b07205146fef128e6edddefeb2cf7df64ee21`
+- 独立 Draft PR：`https://github.com/RiyaoChan/DWTFreqNet/pull/4`
 - 226 独立部署目录：`/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_E_LFSS`
 - 数据集目录：`/DATA20T/bip/cry/code/DWTFreqNet_DM_AWGM/datasets`
 
