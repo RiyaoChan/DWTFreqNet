@@ -55,7 +55,9 @@ rm -f "${FAILED_MARKER}" "${COMPLETE_MARKER}"
 cleanup() {
   local status=$?
   rm -f "${RUNNING_LOCK}"
-  if [[ ${status} -eq 0 ]]; then
+  # A killed or otherwise incomplete trainer must not look like a valid run.
+  # Formal training always writes latest.pth.tar before returning successfully.
+  if [[ ${status} -eq 0 && -s "${OUTPUT_DIR}/latest.pth.tar" ]]; then
     touch "${COMPLETE_MARKER}"
     printf '%s\tcomplete\n' "$(date --iso-8601=seconds)" >> "${OUTPUT_DIR}/status.tsv"
   else
