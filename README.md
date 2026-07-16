@@ -13,6 +13,15 @@ with one wavelet decoder. Its `sd_raw`, `sd_awgm`, `sd_pyramid`, and `sd_full`
 variants are trained through `train_experiment_b.py`; protocol and live results
 are recorded in `EXPERIMENT_B_SINGLE_DECODER_RECORD.md`.
 
+## Experiment E: LFSS-preconditioned AWGM encoder
+
+`model/DWTFreqNet_SingleDecoder_LFSS_AWGM.py` adds one original Wave-Mamba
+LFSSBlock before each stage-wise AWGM while preserving raw H/V/D coefficients
+and the single wavelet decoder. E1 retains the original post-AWGM Res_block;
+E2 replaces it with a fixed Conv1x1-BN-GELU transition. The Chinese protocol,
+validation, complexity, queue and live results are recorded in
+`EXPERIMENT_E_LFSS_AWGM_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
