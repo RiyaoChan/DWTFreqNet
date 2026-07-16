@@ -1,6 +1,6 @@
 # Experiment E：LFSS 预处理的 AWGM Encoder 实验记录
 
-更新时间：2026-07-16 20:42（CST）
+更新时间：2026-07-16 21:56（CST）
 
 ## 1. 实验目的与方案
 
@@ -115,11 +115,11 @@ epoch 100 起每 epoch 评估 mIoU、nIoU、F1、Pd、Fa。调度器仅在显存
 2. E1 IRSTD-1K、E2 IRSTD-1K；
 3. E1 NUDT-SIRST、E2 NUDT-SIRST。
 
-| 任务 | GPU | 状态（2026-07-16 20:42 CST） | 输出目录 |
+| 任务 | GPU | 状态（2026-07-16 21:56 CST） | 输出目录 |
 |---|---:|---|---|
-| E1 NUAA-SIRST | 5 | 运行中，约 epoch 606；best 暂为 epoch 595 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/NUAA-SIRST/seed42` |
-| E2 NUAA-SIRST | 6 | 运行中，约 epoch 606；best 暂为 epoch 551 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/NUAA-SIRST/seed42` |
-| E1 IRSTD-1K | 2 | 运行中，epoch 1 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/IRSTD-1K/seed42` |
+| E1 NUAA-SIRST | 5 | 运行中，约 epoch 805；best 暂为 epoch 595 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/NUAA-SIRST/seed42` |
+| E2 NUAA-SIRST | 6 | 运行中，约 epoch 824；best 暂为 epoch 551 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/NUAA-SIRST/seed42` |
+| E1 IRSTD-1K | 2 | 运行中，约 epoch 94；等待 epoch 100 首次评估 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/IRSTD-1K/seed42` |
 | E2 IRSTD-1K | 自动 | 排队 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/IRSTD-1K/seed42` |
 | E1 NUDT-SIRST | 自动 | 排队 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/NUDT-SIRST/seed42` |
 | E2 NUDT-SIRST | 自动 | 排队 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/NUDT-SIRST/seed42` |
@@ -135,6 +135,16 @@ epoch 100 起每 epoch 评估 mIoU、nIoU、F1、Pd、Fa。调度器仅在显存
 
 相对于已完成的 E0 NUAA `sd_awgm`（mIoU 0.7799），当前 E1 高 0.0043，
 E2 高 0.0098；该比较仅用于阶段观察，不能替代 1000 epoch 最终结论。
+
+### 最新队列快照（2026-07-16 21:56 CST）
+
+当前 7 张 GPU 均无满足空闲阈值的卡：GPU 5/6 分别运行 E1/E2 NUAA，GPU 2
+运行 E1 IRSTD，GPU 0/1/3/4 由其他任务占用。队列会在任意 GPU 满足显存、利用率
+和 compute PID 条件后自动启动下一项 E2 IRSTD，再继续 NUDT-SIRST 两项。
+
+E1 IRSTD 当前尚未达到 epoch 100，因此还没有可报告的测试集性能指标；其训练
+已正常写入 `metrics.jsonl`，最近记录为 epoch 94。NUAA 的当前 best 结果仍为
+E1 epoch 595、E2 epoch 551（见上一表），后续训练会继续刷新并在此记录中更新。
 
 首次启动时发现调度器存在约两秒的 CUDA 登记竞态，E1/E2 wrapper 曾短暂同时
 选择 GPU 5。E2 的这次无效启动已停止并完整归档到
