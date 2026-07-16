@@ -202,8 +202,10 @@ Baidu Pan: https://pan.baidu.com/s/1nWugwqxK-KvL99A_F7_EKA?pwd=rph9 code: rph9
 
 ## 📊 Experimental Results
 
-Experiment D 的 Decoder HFE relation 消融（D1–D4）、复杂度和三数据集训练记录见
-[`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`](EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md)。
+Experiment D 的 Decoder HFE relation 消融（D1–D7）、复杂度和三数据集训练记录见
+[`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`](EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md)
+以及
+[`EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`](EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md)。
 
 <div align="center">
 <img src="image/zong_duibitu_update3.png" height="450">

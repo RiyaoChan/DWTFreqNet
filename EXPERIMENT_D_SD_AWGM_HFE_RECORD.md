@@ -183,3 +183,14 @@ D4 于 2026-07-15 22:28:16 CST 在 226 服务器正式启动：NUAA-SIRST 使用
 IRSTD-1K 使用 GPU4，NUDT-SIRST 使用 GPU5；三项均训练1000 epoch，从 epoch100
 起逐 epoch 评估。完整结构、测试、复杂度、PID、输出目录和结果表见
 `EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。
+
+## 11. Decoder HFE 空间一致性消融（D5–D7）
+
+D5/D6/D7 均属于 Experiment D 内部消融。D5 验证同位置高低频一致性，D6 验证
+3×3 邻域空间偏移，D7 验证 detached targetness prior 能否抑制背景错误一致性。
+三者均复用 D4 的最终 gate/value/project 融合头，不使用全局通道 Matching。
+
+CPU、完整 CUDA/AMP、退化等价性、禁止 cdist/topk、beta置零、DWT/IDWT 和
+NUAA batch4 smoke 均已通过。2026-07-15 23:08 CST 已在 226 启动动态队列，首批
+使用 GPU0/1/2 跑 D5 三数据集、GPU6 跑 D6 NUAA，D4 的 GPU3/4/5 未被中断。
+完整记录见 `EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`。
