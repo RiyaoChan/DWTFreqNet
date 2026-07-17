@@ -115,14 +115,14 @@ epoch 100 起每 epoch 评估 mIoU、nIoU、F1、Pd、Fa。调度器仅在显存
 2. E1 IRSTD-1K、E2 IRSTD-1K；
 3. E1 NUDT-SIRST、E2 NUDT-SIRST。
 
-| 任务 | GPU | 状态（2026-07-17 07:45 CST） | 输出目录 |
+| 任务 | GPU | 状态（2026-07-17 15:01 CST） | 输出目录 |
 |---|---:|---|---|
 | E1 NUAA-SIRST | 5 | 已完成 1000 epoch；best epoch 595 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/NUAA-SIRST/seed42` |
 | E2 NUAA-SIRST | 6 | 已完成 1000 epoch；best epoch 551 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/NUAA-SIRST/seed42` |
-| E1 IRSTD-1K | 2 | 运行中，约 epoch 643；best epoch 551 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/IRSTD-1K/seed42` |
-| E2 IRSTD-1K | 6 | 运行中，约 epoch 528；best epoch 178 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/IRSTD-1K/seed42` |
-| E1 NUDT-SIRST | 5 | 运行中，约 epoch 505；best epoch 456 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/NUDT-SIRST/seed42` |
-| E2 NUDT-SIRST | 3 | 运行中，约 epoch 384；best epoch 332 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/NUDT-SIRST/seed42` |
+| E1 IRSTD-1K | — | 已完成 1000 epoch；best epoch 551 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/IRSTD-1K/seed42` |
+| E2 IRSTD-1K | — | 已完成 1000 epoch；best epoch 552 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/IRSTD-1K/seed42` |
+| E1 NUDT-SIRST | — | 已完成 1000 epoch；best epoch 456 | `runs/experiment_e_lfss_awgm/E1_lfss_resblock/NUDT-SIRST/seed42` |
+| E2 NUDT-SIRST | 3 | 运行中，约 epoch 936；best epoch 570 | `runs/experiment_e_lfss_awgm/E2_lfss_transition/NUDT-SIRST/seed42` |
 
 ### NUAA-SIRST 最终结果（2026-07-17 07:45 CST）
 
@@ -135,28 +135,30 @@ epoch 100 起每 epoch 评估 mIoU、nIoU、F1、Pd、Fa。调度器仅在显存
 
 相对于 E0 NUAA `sd_awgm`（mIoU 0.7799），E1 提升 0.0043，E2 提升 0.0098。
 
-### 六项实验最新结果快照（2026-07-17 07:45 CST）
+### 六项实验最新结果快照（2026-07-17 15:01 CST）
 
-除 NUAA 两项已完成外，其余四项仍在训练；下表是各自当前
-`best_metrics.json`，不是最终结果：
+除 E2-NUDT 外，其余五项已完成；下表是各自当前
+`best_metrics.json`：
 
 | 方案 | 数据集 | best epoch | mIoU | nIoU | F1 | Pd | Fa |
 |---|---|---:|---:|---:|---:|---:|---:|
 | E1 `lfss_resblock` | NUAA-SIRST | 595 | 0.7842 | 0.7960 | 0.8790 | 0.9656 | 2.717e-5 |
 | E2 `lfss_transition` | NUAA-SIRST | 551 | 0.7897 | 0.7930 | 0.8825 | 0.9618 | 1.928e-5 |
 | E1 `lfss_resblock` | IRSTD-1K | 551 | 0.6647 | 0.6630 | 0.7985 | 0.9158 | 1.230e-5 |
-| E2 `lfss_transition` | IRSTD-1K | 178 | 0.6596 | 0.6075 | 0.7949 | 0.8889 | 2.215e-5 |
+| E2 `lfss_transition` | IRSTD-1K | 552 | 0.6631 | 0.6626 | 0.7975 | 0.9192 | 9.850e-6 |
 | E1 `lfss_resblock` | NUDT-SIRST | 456 | 0.9516 | 0.9482 | 0.9752 | 0.9947 | 1.724e-6 |
-| E2 `lfss_transition` | NUDT-SIRST | 332 | 0.9489 | 0.9500 | 0.9738 | 0.9894 | 2.505e-6 |
+| E2 `lfss_transition` | NUDT-SIRST | 570 | 0.9509 | 0.9513 | 0.9748 | 0.9905 | 3.125e-6 |
 
-### 最新队列快照（2026-07-17 07:45 CST）
+### 最新队列快照（2026-07-17 15:01 CST）
 
-当前 7 张 GPU 均无满足空闲阈值的卡：GPU 2/6/5/3 分别承载 E1-IRSTD、
-E2-IRSTD、E1-NUDT、E2-NUDT；GPU 0/1/4 由其他任务占用，已完成的 NUAA
-任务已释放其原 GPU 并由后续任务接替。
+当前仅 GPU 3 运行 E2-NUDT；GPU 1 运行旧的 Experiment D：
+`D7_target_neighborhood`（NUDT-SIRST，约 epoch 822）。GPU 0/2/4/5/6 当前
+无训练 compute PID；E1/E2-NUAA、E1/E2-IRSTD、E1-NUDT 已完成并释放 GPU。
 
-E1/E2 IRSTD 当前约为 epoch 643/528，E1/E2 NUDT 当前约为 epoch 505/384；四项
-均已超过 epoch 100 并持续评估，后续 epoch 仍可能刷新 best 结果。
+E2-NUDT 当前约为 epoch 936/1000，最新 epoch 的 mIoU/nIoU/F1/Pd/Fa 为
+0.9429/0.9457/0.9706/0.9905/4.941e-6；best 仍为 epoch 570，训练完成后再
+确定最终结果。D7 当前约为 epoch 822，best 暂为 epoch 482，mIoU/nIoU/F1/Pd/Fa
+为 0.9433/0.9461/0.9708/0.9915/1.563e-6。
 
 首次启动时发现调度器存在约两秒的 CUDA 登记竞态，E1/E2 wrapper 曾短暂同时
 选择 GPU 5。E2 的这次无效启动已停止并完整归档到
