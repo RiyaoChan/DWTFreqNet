@@ -33,12 +33,12 @@ TASK_VARIANTS=(
   f2_sparse
   f3_cross_direction
   f1_multiscale
-  f4_low_guided_full
-  f2_sparse
-  f3_cross_direction
   f1_multiscale
   f4_low_guided_full
+  f4_low_guided_full
   f2_sparse
+  f2_sparse
+  f3_cross_direction
   f3_cross_direction
 )
 TASK_DATASETS=(
@@ -47,12 +47,12 @@ TASK_DATASETS=(
   NUAA-SIRST
   NUAA-SIRST
   IRSTD-1K
-  IRSTD-1K
-  IRSTD-1K
+  NUDT-SIRST
   IRSTD-1K
   NUDT-SIRST
+  IRSTD-1K
   NUDT-SIRST
-  NUDT-SIRST
+  IRSTD-1K
   NUDT-SIRST
 )
 

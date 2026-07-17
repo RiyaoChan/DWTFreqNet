@@ -135,26 +135,41 @@ loss、评价、训练参数和数据划分与 E1 一致。
 
 | 优先级 | 变体 | 数据集 | 输出目录 | GPU/PID | 状态 |
 |---:|---|---|---|---|---|
-| 1 | F1 | NUAA-SIRST | `F1_multiscale/NUAA-SIRST/seed42` | GPU0 / 2158100 / 2158108 | 运行中（epoch2） |
-| 2 | F4 | NUAA-SIRST | `F4_low_guided_full/NUAA-SIRST/seed42` | GPU2 / 2158294 / 2158302 | 运行中（epoch2） |
-| 3 | F2 | NUAA-SIRST | `F2_sparse/NUAA-SIRST/seed42` | GPU3 / 2158597 / 2158605 | 运行中（epoch1） |
-| 4 | F3 | NUAA-SIRST | `F3_cross_direction/NUAA-SIRST/seed42` | GPU4 / 2158925 / 2158933 | 运行中（epoch1） |
-| 5 | F1 | IRSTD-1K | `F1_multiscale/IRSTD-1K/seed42` | GPU5 / 2159332 / 2159340 | 运行中（首轮） |
-| 6 | F4 | IRSTD-1K | `F4_low_guided_full/IRSTD-1K/seed42` | GPU6 / 2159784 / 2159792 | 运行中（首轮） |
-| 7 | F2 | IRSTD-1K | `F2_sparse/IRSTD-1K/seed42` | 待分配 | 待启动 |
-| 8 | F3 | IRSTD-1K | `F3_cross_direction/IRSTD-1K/seed42` | 待分配 | 待启动 |
-| 9 | F1 | NUDT-SIRST | `F1_multiscale/NUDT-SIRST/seed42` | 待分配 | 待启动 |
-| 10 | F4 | NUDT-SIRST | `F4_low_guided_full/NUDT-SIRST/seed42` | 待分配 | 待启动 |
-| 11 | F2 | NUDT-SIRST | `F2_sparse/NUDT-SIRST/seed42` | 待分配 | 待启动 |
-| 12 | F3 | NUDT-SIRST | `F3_cross_direction/NUDT-SIRST/seed42` | 待分配 | 待启动 |
+| 1 | F1 | NUAA-SIRST | `F1_multiscale/NUAA-SIRST/seed42` | GPU0 / 2158100 / 2158108 | 运行中（epoch32） |
+| 2 | F4 | NUAA-SIRST | `F4_low_guided_full/NUAA-SIRST/seed42` | GPU2 / 2158294 / 2158302 | 运行中（epoch29） |
+| 3 | F2 | NUAA-SIRST | `F2_sparse/NUAA-SIRST/seed42` | GPU3 / 2158597 / 2158605 | 运行中（epoch30） |
+| 4 | F3 | NUAA-SIRST | `F3_cross_direction/NUAA-SIRST/seed42` | GPU4 / 2158925 / 2158933 | 运行中（epoch29） |
+| 5 | F1 | IRSTD-1K | `F1_multiscale/IRSTD-1K/seed42` | GPU5 / 2159332 / 2159340 | 运行中（epoch7） |
+| 6 | F1 | NUDT-SIRST | `F1_multiscale/NUDT-SIRST/seed42` | GPU6 / 2165890 / 2165898 | 运行中（epoch4） |
+| 7 | F4 | IRSTD-1K | `F4_low_guided_full/IRSTD-1K/seed42` | GPU1 / 2169933 / 2169940 | 已从头重启（初始化完成） |
+| 8 | F4 | NUDT-SIRST | `F4_low_guided_full/NUDT-SIRST/seed42` | 待分配 | 下一张空闲 GPU 优先启动 |
+| 9 | F2 | IRSTD-1K | `F2_sparse/IRSTD-1K/seed42` | 待分配 | 待启动 |
+| 10 | F2 | NUDT-SIRST | `F2_sparse/NUDT-SIRST/seed42` | 待分配 | F2/IRSTD 启动后优先补齐 |
+| 11 | F3 | IRSTD-1K | `F3_cross_direction/IRSTD-1K/seed42` | 待分配 | 待启动 |
+| 12 | F3 | NUDT-SIRST | `F3_cross_direction/NUDT-SIRST/seed42` | 待分配 | F3/IRSTD 启动后优先补齐 |
 
-动态队列每60秒检查允许列表中的空闲 GPU，要求显存占用小于1000 MiB、利用率
+动态队列当前每10秒检查允许列表中的空闲 GPU，要求显存占用小于1000 MiB、利用率
 小于10%且无 compute PID；不会停止或抢占 Experiment D/E 及其他用户任务。
 
-正式队列于 `2026-07-17 16:09:29 CST` 启动，PID `2158005`。启动时 GPU1 被
-Experiment D 的 D7/NUDT-SIRST 使用，队列保持该任务运行并只使用空闲的
-GPU0/2/3/4/5/6。六项后续任务继续排队，任一显卡满足空闲条件时按表中优先级
-自动启动。首批六项均已生成 `run_config.json` 和 `RUNNING.lock`，未发现 FAILED。
+正式队列最初于 `2026-07-17 16:09:29 CST` 启动。按用户在
+`2026-07-17 16:15 CST` 的新要求，已停止原队列和 GPU6 上的 F4/IRSTD-1K；
+该任务完成的前2个 epoch 未作为正式结果，完整中断现场保存在
+`runs/cancelled_20260717_1615/F4_low_guided_full/IRSTD-1K/seed42`，正式输出目录已
+释放，后续会从头训练。
+
+队列已改为同一变体的 IRSTD-1K 与 NUDT-SIRST 相邻排序：
+`F1 IRSTD+NUDT -> F4 IRSTD+NUDT -> F2 IRSTD+NUDT -> F3 IRSTD+NUDT`。
+这里的“同步”表示顺序补齐，不要求同时空出两张显卡：某变体的 IRSTD-1K 已
+启动后，下一张空闲卡优先启动同变体 NUDT-SIRST，再进入下一变体。
+
+GPU6 于 `2026-07-17 16:17:24 CST` 启动 F1/NUDT-SIRST，补齐 F1。按用户要求，
+Experiment D 的 D7 target_neighborhood/NUDT-SIRST 于 epoch886 停止并释放
+GPU1；它在停止前的最佳结果为 epoch840：mIoU 0.943812、nIoU 0.947057、
+F1 0.971094、Pd 0.992593、Fa 1.976289e-6，checkpoint 和日志均保留在原目录。
+新队列于 `2026-07-17 16:23:07 CST` 启动，队列 PID `2169345`，随后在 GPU1
+从头启动 F4/IRSTD-1K；下一张空闲 GPU 将优先启动 F4/NUDT-SIRST。其余6个
+Experiment F 进程均未停止或重启。以上运行进度快照采集于
+`2026-07-17 16:24 CST`。
 
 ## 10. 结果表
 
