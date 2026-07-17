@@ -3,6 +3,10 @@
 > Experiment E：LFSS 预处理的 AWGM Encoder 已建立独立分支并在 226 服务器
 > 按 E1/E2 × NUAA-SIRST、IRSTD-1K、NUDT-SIRST 共 6 项正式实验排队执行。
 > 完整中文方案、验证、复杂度和实时结果见 `EXPERIMENT_E_LFSS_AWGM_RECORD.md`。
+>
+> Experiment F：以 E1 为 F0，只替换 Encoder 的 pre-AWGM 高频编码器为 DSHF，
+> 执行 F1/F4/F2/F3 × 三数据集共12项实验。完整记录见
+> `EXPERIMENT_F_DSHF_RECORD.md`。
 
 本文件记录服务器 `cry@202.38.209.226` 上完成或正在运行的 DWTFreqNet 实验。训练数据位于 `/DATA20T/bip/cry/code/SIRST-5K-main/dataset/`，项目目录位于 `/DATA20T/bip/cry/code/`。指标均来自测试集评估，Fa 使用绝对比例记录为 `e-6`。
 

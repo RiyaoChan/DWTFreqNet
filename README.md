@@ -22,6 +22,14 @@ E2 replaces it with a fixed Conv1x1-BN-GELU transition. The Chinese protocol,
 validation, complexity, queue and live results are recorded in
 `EXPERIMENT_E_LFSS_AWGM_RECORD.md`.
 
+## Experiment F: DSHF high-frequency encoder
+
+`model/DWTFreqNet_SingleDecoder_LFSS_DSHF_AWGM.py` keeps the Experiment E1
+LFSS/AWGM/Res_block and raw-Haar single-decoder path, while replacing only the
+pre-AWGM `DirectionalBandEncoder` with F1–F4 DSHF ablations. The Chinese design,
+validation, complexity, dynamic GPU queue and live results are recorded in
+`EXPERIMENT_F_DSHF_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
