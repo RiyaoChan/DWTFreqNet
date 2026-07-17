@@ -257,3 +257,134 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 | IRSTD-1K | `dm_awgm_no_mamba` | 671 | 450 | 65.2340 | 64.9133 | 78.9595 | 92.5926 | 24.8240 |
 | IRSTD-1K | `dm_awgm_no_dcn` | 596 | 580 | 65.5795 | 65.8119 | 79.2121 | 93.9394 | 14.7464 |
 | IRSTD-1K | `dm_awgm_conv_only` | 637 | 625 | 65.9995 | 66.1821 | 79.5177 | 92.5926 | 13.9493 |
+
+## 18. 新服务器 W8M/Mamba 最新结果回填（停止前快照，2026-07-13）
+
+新服务器上仍有此前部署的 W8M-AWGM（Mamba）实验。以下结果从
+`/root/autodl-tmp/DWTFreqNet_W8M/runs/w8m_haar_aligned_full` 下各实验的
+`best_metrics.json` 和 `metrics.jsonl` 回填；指标为百分比，Fa 为 `×10^-6`。
+旧的 H/V 方向相反实验已标记为无效，不纳入本表。
+
+| 数据集 | 方案 | 状态/当前 epoch | 最佳 epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | `w8m_diag2_subband_shared` | 完成/1000 | 553 | 78.3085 | 78.4080 | 87.8348 | 96.1832 | 15.5038 |
+| NUAA-SIRST | `w8m_diag4_subband_shared` | 完成/1000 | 294 | 77.7742 | 78.0461 | 87.4977 | 95.8015 | 32.6540 |
+| NUAA-SIRST | `w8m_diag4_axial_diag_shared` | 完成/1000 | 350 | 78.5339 | 78.4651 | 87.9765 | 95.8015 | 19.2082 |
+| NUAA-SIRST | `w8m_diag4_axial_diag_shared_dir_embed` | 完成/1000 | 546 | 77.4292 | 78.0457 | 87.2790 | 95.4198 | 18.6594 |
+| NUAA-SIRST | `w8m_diag4_pair_shared` | 完成/1000 | 449 | 78.0801 | 78.3486 | 87.6910 | 95.4198 | 16.8758 |
+| NUAA-SIRST | `w8m_diag4_independent` | 完成/1000 | 355 | 78.5683 | 78.8043 | 87.9981 | 96.1832 | 33.4772 |
+| NUAA-SIRST | `w8m_diag4_all_shared` | 进行中/663 | 334 | 78.1965 | 79.5442 | 87.7643 | 95.4198 | 30.9390 |
+| NUDT-SIRST | `w8m_diag2_subband_shared` | 完成/1000 | 337 | 94.5438 | 95.1337 | 97.1954 | 99.5767 | 7.6294 |
+| NUDT-SIRST | `w8m_diag4_subband_shared` | 完成/1000 | 337 | 95.2406 | 95.3566 | 97.5623 | 99.4709 | 3.0334 |
+| NUDT-SIRST | `w8m_diag4_axial_diag_shared` | 完成/1000 | 491 | 94.8034 | 95.2712 | 97.3324 | 99.3651 | 6.0897 |
+| NUDT-SIRST | `w8m_diag4_axial_diag_shared_dir_embed` | 完成/1000 | 392 | 95.0249 | 95.2632 | 97.4490 | 99.4709 | 3.0104 |
+| NUDT-SIRST | `w8m_diag4_pair_shared` | 完成/1000 | 510 | 94.9605 | 95.2263 | 97.4151 | 99.1534 | 3.8836 |
+| NUDT-SIRST | `w8m_diag4_independent` | 进行中/961 | 271 | 94.9061 | 94.9621 | 97.3865 | 99.1534 | 3.2862 |
+| NUDT-SIRST | `w8m_diag4_all_shared` | 进行中/327 | 295 | 95.0420 | 95.2982 | 97.4580 | 99.3651 | 3.6079 |
+| IRSTD-1K | `w8m_diag2_subband_shared` | 完成/1000 | 458 | 66.1710 | 66.4951 | 79.6420 | 92.9293 | 16.1508 |
+| IRSTD-1K | `w8m_diag4_subband_shared` | 完成/1000 | 599 | 65.7319 | 65.1970 | 79.3232 | 91.5825 | 18.8647 |
+| IRSTD-1K | `w8m_diag4_axial_diag_shared` | 完成/1000 | 700 | 65.3019 | 65.3385 | 79.0092 | 92.2559 | 13.3230 |
+| IRSTD-1K | `w8m_diag4_axial_diag_shared_dir_embed` | 完成/1000 | 699 | 66.0666 | 65.9325 | 79.5664 | 92.9293 | 16.2267 |
+| IRSTD-1K | `w8m_diag4_pair_shared` | 进行中/806 | 694 | 65.9442 | 66.0148 | 79.4776 | 92.5926 | 14.1391 |
+| IRSTD-1K | `w8m_diag4_independent` | 进行中/277 | 251 | 64.5102 | 64.1935 | 78.4270 | 89.2256 | 30.0052 |
+| IRSTD-1K | `w8m_diag4_all_shared` | 进行中/28 | — | — | — | — | — | — |
+
+因此，新服务器上的 Mamba/W8M 实验结果已经有历史快照记录；本节补充了
+2026-07-13 停止前的最新完整结果和当时进行中的任务。停止前已完成 15/21
+个 W8M 组合，其余 6 个的训练均已停止，训练日志和 checkpoint 均保存在对应输出目录。
+
+## 19. 新服务器任务停止记录（2026-07-13）
+
+按最新调度要求，新服务器上的全部训练任务和 W8M/Experiment B 调度器已停止。
+停止前的 W8M/Mamba 结果已在第 18 节记录；所有 checkpoint、`metrics.jsonl`、
+`best_metrics.json` 和日志文件均保留，后续如需恢复可从 `latest.pth.tar` 继续。
+
+## 20. Experiment B 单解码器 IRSTD-1K 补录
+
+226 服务器 `DWTFreqNet_SINGLE_DECODER_B` 的 IRSTD-1K 单解码器实验均已训练到
+1000 epoch，以下为最佳 checkpoint（Fa 单位为 ×10^-6）：
+
+| 方案 | Best epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---:|---:|---:|---:|---:|---:|
+| `sd_raw` | 596 | 65.10 | 64.04 | 78.86 | 90.57 | 20.82 |
+| `sd_pyramid` | 632 | 64.77 | 64.46 | 78.62 | 89.90 | 16.21 |
+| `sd_awgm` | 894 | **65.61** | **64.77** | **79.24** | **90.91** | **15.37** |
+| `sd_full` | 680 | 64.75 | 63.96 | 78.60 | 90.91 | 16.74 |
+
+其中 `sd_awgm` 是这四个 IRSTD-1K 单解码器方案中 mIoU 最高的方案。
+
+## 21. Experiment C：SD-AWGM + Encoder-side LDRC
+
+Experiment C 的完整中文记录见 `EXPERIMENT_C_SD_AWGM_LDRC_RECORD.md`。该实验
+只在 Experiment B `sd_awgm` 编码特征侧增加 LDRC，使用独立分支和输出目录，未
+修改 Experiment B 的模型文件。已记录的最佳 mIoU 为：NUAA `0.7755`、NUDT
+`0.9564`、IRSTD-1K `0.6508`；对应基线和完整五项指标见该记录文件。
+
+## 22. Experiment D：SD-AWGM + Decoder-side HFE（阶段性快照）
+
+Experiment D 在 Experiment B 的 `sd_awgm` 单解码器基础上，仅增加 Decoder-side
+High-Frequency Enhancement（HFE）。三项任务均在 226 服务器训练至 1000 epoch，
+从 epoch 100 开始逐 epoch 评估；截至 2026-07-15 的 `best_metrics.json` 快照如下
+（Fa 为原始比例）：
+
+| 数据集 | 当前 epoch | 最佳 epoch | mIoU | nIoU | F1 | Pd | Fa |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| NUAA-SIRST | 1000 | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 |
+| NUDT-SIRST | 1000 | 694 | 0.9432 | 0.9490 | 0.9708 | 0.9915 | 4.343e-6 |
+| IRSTD-1K | 1000 | 556 | 0.6574 | 0.6589 | 0.7933 | 0.9226 | 1.395e-5 |
+
+完整设计、复杂度、诊断统计和输出目录见
+`EXPERIMENT_D_SD_AWGM_HFE_RECORD.md`。三个数据集均已完成 1000 epoch。
+
+## 23. Experiment D Matching 消融（D2 → D3）
+
+Experiment D 新增两个内部 matching 消融：D2 为四尺度 Soft Cosine Top-k，D3
+为浅层 Local Correlation Gate、深层 Soft Cosine Top-k。D2 三数据集已在 226
+服务器 GPU1/2/5 启动。按后续调度要求，D3 NUAA-SIRST 已于 2026-07-14 23:41
+CST 提前使用空闲 GPU6 启动。三个 D2 于 2026-07-15 00:59 CST 通过首次评估
+门槛后，D3 的 IRSTD-1K（GPU1）和 NUDT-SIRST（GPU6）也已启动。目前 D1、D2、
+D3 的三个数据集组合均已完成 1000 epoch。最终快照和进程信息见
+`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。
+
+## 24. Experiment D No Explicit Matching 消融（D4）
+
+D4 `sd_awgm_hfe_nomatch` 保留 decoder 低频条件融合，但删除所有高低频显式通道
+Matching，包括 L2/Cosine 相似度、Top-1/Top-k、候选索引和 `C×C` Matching
+矩阵。四个尺度均使用 Direct Low Fusion，其他 HFE、方向残差、单解码器和训练
+设置与 D1 保持一致。
+
+CPU/CUDA、AMP、beta置零、禁止 `torch.cdist/topk`、Matching模块扫描、真实 NUAA
+batch4 smoke 和复杂度测试均已通过。D4 与 D1 参数量及 THOP FLOPs相同，均为
+10.181M/20.47G；RTX3090 实测 D4 为15.73ms、63.58 FPS。三数据集于
+2026-07-15 22:28:16 CST 分别在 GPU3/4/5 启动，训练1000 epoch，epoch100 起
+逐 epoch 评估。完整记录见 `EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`。
+
+## 25. Experiment D 空间一致性消融（D5–D7）
+
+在 D4 无显式通道匹配的基础上新增三个内部空间关系消融：D5 为同位置高低频
+余弦一致性与低频局部对比门控，D6 为 3×3 邻域局部注意力，D7 为现有 side head
+detached targetness 引导的 3×3 邻域注意力。三者保持 DWT/IDWT=4/4、单解码器、
+方向残差和原有 loss，不使用 cdist/topk 或全局通道 Matching。
+
+CPU、RTX3090 完整 FP32/AMP、退化等价性、真 NUAA batch4 smoke 和复杂度测试
+均已通过。2026-07-15 23:08 CST 在 226 启动九项动态队列：首批 GPU0/1/2 为
+D5 三数据集，GPU6 为 D6 NUAA；D6 余下两项与 D7 三项等待空闲卡。D4 GPU3/4/5
+保持运行。完整记录见 `EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`。
+
+## 26. Experiment D5–D7 最新结果快照（2026-07-16）
+
+D4–D7 的当前最佳指标和训练进度已同步到
+`EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`。D4 NUAA/IRSTD、D5 NUAA、D6
+NUAA 已完成1000 epoch；D4 NUDT、D5/D6 的 IRSTD 与 NUDT、D7 NUAA 仍在训练，D7
+IRSTD 尚未到 epoch100，D7 NUDT 排队中。226 服务器当前 GPU 计算进程均属于
+`cry`，未发现其他用户的 GPU 进程。
+
+## 27. Experiment D 记录更新（2026-07-17 16:26 CST）
+
+已重新读取服务器 D1–D7 全部 `best_metrics.json` 和训练日志。D1–D6 的三个
+数据集，以及 D7 的 NUAA-SIRST、IRSTD-1K，均已训练到1000 epoch；D4/NUDT 的
+旧“运行中”状态也已修正为完成。D7/NUDT-SIRST 按用户要求停止于 epoch888，
+最佳 epoch840：mIoU 0.943812、nIoU 0.947057、F1 0.971094、Pd 0.992593、
+Fa 1.976e-6。该结果明确标记为未完成1000 epoch，不能与完整实验等同。服务器
+当前没有 Experiment D 训练进程；详细结果见
+`EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md` 第15节。

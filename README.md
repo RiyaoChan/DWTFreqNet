@@ -1,3 +1,18 @@
+## Experiment A v2: isolated WULLE local branch
+
+`model/DWTFreqNet_WULLE.py` adds the Wavelet U-Net Local-frequency Learning
+Encoder/decoder branch without changing `model/DWTFreqNet.py`. Select it with
+`train_one.py --model-variant dwtfreqnet_wulle_a`; use
+`dwtfreqnet_original` for the baseline. The protocol, commands and live experiment
+table are recorded in `EXPERIMENT_A_WULLE_V2_RECORD.md`.
+
+## Experiment B: single decoder directional pyramid
+
+`model/DWTFreqNet_SingleDecoder.py` isolates a four-DWT/four-IDWT architecture
+with one wavelet decoder. Its `sd_raw`, `sd_awgm`, `sd_pyramid`, and `sd_full`
+variants are trained through `train_experiment_b.py`; protocol and live results
+are recorded in `EXPERIMENT_B_SINGLE_DECODER_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
@@ -186,6 +201,11 @@ Baidu Pan: https://pan.baidu.com/s/1nWugwqxK-KvL99A_F7_EKA?pwd=rph9 code: rph9
 ---
 
 ## 📊 Experimental Results
+
+Experiment D 的 Decoder HFE relation 消融（D1–D7）、复杂度和三数据集训练记录见
+[`EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md`](EXPERIMENT_D_HFE_MATCHING_ABLATION_RECORD.md)
+以及
+[`EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`](EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md)。
 
 <div align="center">
 <img src="image/zong_duibitu_update3.png" height="450">
