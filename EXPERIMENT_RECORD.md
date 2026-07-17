@@ -378,3 +378,12 @@ D4–D7 的当前最佳指标和训练进度已同步到
 NUAA 已完成1000 epoch；D4 NUDT、D5/D6 的 IRSTD 与 NUDT、D7 NUAA 仍在训练，D7
 IRSTD 尚未到 epoch100，D7 NUDT 排队中。226 服务器当前 GPU 计算进程均属于
 `cry`，未发现其他用户的 GPU 进程。
+
+## 27. Experiment D 记录更新（2026-07-17 15:06 CST）
+
+已将 D5–D7 的服务器最新 `best_metrics.json` 快照同步到专题记录。D5、D6 的
+NUAA-SIRST、NUDT-SIRST、IRSTD-1K 均完成 1000 epoch；D7 的 NUAA-SIRST 和
+IRSTD-1K 也已完成 1000 epoch。D7/NUDT-SIRST 当前运行至 epoch 827/1000，
+最佳 epoch 482，mIoU 0.943340、nIoU 0.946081、F1 0.970844、Pd 0.991534、
+Fa 1.563e-6。D7 NUDT 是当前 Experiment D 唯一未完成任务；详细的九项指标表和
+进程信息见 `EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md` 第 15 节。

@@ -194,3 +194,11 @@ CPU、完整 CUDA/AMP、退化等价性、禁止 cdist/topk、beta置零、DWT/I
 NUAA batch4 smoke 均已通过。2026-07-15 23:08 CST 已在 226 启动动态队列，首批
 使用 GPU0/1/2 跑 D5 三数据集、GPU6 跑 D6 NUAA，D4 的 GPU3/4/5 未被中断。
 完整记录见 `EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`。
+
+## 12. Experiment D 全部消融最新状态（2026-07-17 15:06 CST）
+
+本记录的 D1 主模型及 D2–D4 matching/no-matching 结果保持不变；D5–D7 空间
+一致性消融的最新结果已同步到专题记录第 15 节。当前仅 D7/NUDT-SIRST 尚未到
+1000 epoch（最新 epoch 827，最佳 epoch 482，mIoU 0.943340、nIoU 0.946081、
+F1 0.970844、Pd 0.991534、Fa 1.563e-6），其余 D5/D6 三数据集和 D7 的 NUAA、
+IRSTD 均已完成。这样总记录中的 Experiment D 状态与服务器输出保持一致。

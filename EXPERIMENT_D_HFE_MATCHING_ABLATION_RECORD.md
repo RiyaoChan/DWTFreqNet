@@ -297,3 +297,11 @@ DWTFreqNet checkpoint，也不覆盖已有 D1–D3 目录。指标将在 epoch10
 Deep Supervision side head 提供的 detached targetness 引导的 3×3 邻域注意力。
 三个方案均不恢复全局通道 Matching。完整模型定义、测试、复杂度、动态 GPU
 队列、PID、输出目录和结果表见 `EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`。
+
+## 12. Experiment D 空间消融最新记录（2026-07-17 15:06 CST）
+
+D5、D6、D7 的最新三数据集指标已从 226 服务器回填；D5/D6 三数据集及 D7 的
+NUAA、IRSTD 均已完成 1000 epoch，D7 NUDT 仍在训练（epoch 827/1000）。完整
+指标表、最佳 epoch、Fa 及当前进程信息见
+`EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md` 第 15 节。此次同步不修改
+D1–D4 的模型代码、checkpoint 或历史结果。
