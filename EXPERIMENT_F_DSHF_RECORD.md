@@ -163,7 +163,7 @@ loss、评价、训练参数和数据划分与 E1 一致。
 启动后，下一张空闲卡优先启动同变体 NUDT-SIRST，再进入下一变体。
 
 GPU6 于 `2026-07-17 16:17:24 CST` 启动 F1/NUDT-SIRST，补齐 F1。按用户要求，
-Experiment D 的 D7 target_neighborhood/NUDT-SIRST 于 epoch886 停止并释放
+Experiment D 的 D7 target_neighborhood/NUDT-SIRST 于 epoch888 停止并释放
 GPU1；它在停止前的最佳结果为 epoch840：mIoU 0.943812、nIoU 0.947057、
 F1 0.971094、Pd 0.992593、Fa 1.976289e-6，checkpoint 和日志均保留在原目录。
 新队列于 `2026-07-17 16:23:07 CST` 启动，队列 PID `2169345`，随后在 GPU1
