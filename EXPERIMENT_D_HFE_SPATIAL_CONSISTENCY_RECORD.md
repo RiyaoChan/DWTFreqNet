@@ -177,7 +177,8 @@ D6/D7 的局部邻域计算没有显著增加 THOP FLOPs，但实测延迟和显
 
 ## 11. 结果表
 
-以下 D0–D3 为已完成结果；D4–D7 在训练完成前不填写最终指标。
+以下结果均来自服务器 `best_metrics.json`。除 D7/NUDT-SIRST 按用户要求在
+epoch888 提前停止外，其余 D1–D7 任务均已训练到1000 epoch。
 
 | Dataset | ID | Relation | Best epoch | mIoU | nIoU | F1 | Pd | Fa | 状态 |
 |---|---|---|---:|---:|---:|---:|---:|---:|---|
@@ -185,26 +186,26 @@ D6/D7 的局部邻域计算没有显著增加 THOP FLOPs，但实测延迟和显
 | NUAA | D1 | Hard L2 Top-1 | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 | 完成 |
 | NUAA | D2 | Soft Cosine Top-k | 350 | 0.773369 | 0.782203 | 0.872203 | 0.973282 | 3.739e-5 | 完成 |
 | NUAA | D3 | Gate + Soft Cosine | 549 | 0.776066 | 0.785939 | 0.873916 | 0.973282 | 3.211e-5 | 完成 |
-| NUAA | D4 | Direct Low Fusion | — | — | — | — | — | — | 训练中 |
-| NUAA | D5 | Same-position | — | — | — | — | — | — | 训练中 |
-| NUAA | D6 | 3×3 Neighborhood | — | — | — | — | — | — | 训练中 |
-| NUAA | D7 | Target-aware 3×3 | — | — | — | — | — | — | 排队 |
+| NUAA | D4 | Direct Low Fusion | 393 | 0.785242 | 0.783468 | 0.879704 | 0.958015 | 3.128e-5 | 已完成1000 epoch |
+| NUAA | D5 | Same-position | 441 | 0.774032 | 0.775192 | 0.872625 | 0.969466 | 2.573e-5 | 已完成1000 epoch |
+| NUAA | D6 | 3×3 Neighborhood | 512 | 0.780663 | 0.782047 | 0.876823 | 0.969466 | 3.416e-5 | 已完成1000 epoch |
+| NUAA | D7 | Target-aware 3×3 | 563 | 0.786192 | 0.788801 | 0.880300 | 0.961832 | 2.140e-5 | 已完成1000 epoch |
 | NUDT | D0 | None | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 完成 |
 | NUDT | D1 | Hard L2 Top-1 | 694 | 0.943166 | 0.949027 | 0.970752 | 0.991534 | 4.343e-6 | 完成 |
 | NUDT | D2 | Soft Cosine Top-k | 419 | 0.946951 | 0.947689 | 0.972753 | 0.990476 | 1.953e-6 | 完成 |
 | NUDT | D3 | Gate + Soft Cosine | 513 | 0.947825 | 0.949940 | 0.973214 | 0.995767 | 1.540e-6 | 完成 |
-| NUDT | D4 | Direct Low Fusion | — | — | — | — | — | — | 训练中 |
-| NUDT | D5 | Same-position | — | — | — | — | — | — | 训练中 |
-| NUDT | D6 | 3×3 Neighborhood | — | — | — | — | — | — | 排队 |
-| NUDT | D7 | Target-aware 3×3 | — | — | — | — | — | — | 排队 |
+| NUDT | D4 | Direct Low Fusion | 441 | 0.944108 | 0.946479 | 0.971251 | 0.988360 | 3.033e-6 | 已完成1000 epoch |
+| NUDT | D5 | Same-position | 685 | 0.942888 | 0.948031 | 0.970604 | 0.989418 | 4.044e-6 | 已完成1000 epoch |
+| NUDT | D6 | 3×3 Neighborhood | 584 | 0.945232 | 0.947691 | 0.971845 | 0.990476 | 1.746e-6 | 已完成1000 epoch |
+| NUDT | D7 | Target-aware 3×3 | 840 | 0.943812 | 0.947057 | 0.971094 | 0.992593 | 1.976e-6 | 用户取消于epoch888，未完成1000 epoch |
 | IRSTD | D0 | None | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 | 完成 |
 | IRSTD | D1 | Hard L2 Top-1 | 556 | 0.657358 | 0.658863 | 0.793260 | 0.922559 | 1.395e-5 | 完成 |
 | IRSTD | D2 | Soft Cosine Top-k | 464 | 0.658223 | 0.659029 | 0.793890 | 0.915825 | 1.704e-5 | 完成 |
 | IRSTD | D3 | Gate + Soft Cosine | 735 | 0.657163 | 0.660729 | 0.793119 | 0.936027 | 1.782e-5 | 完成 |
-| IRSTD | D4 | Direct Low Fusion | — | — | — | — | — | — | 训练中 |
-| IRSTD | D5 | Same-position | — | — | — | — | — | — | 训练中 |
-| IRSTD | D6 | 3×3 Neighborhood | — | — | — | — | — | — | 排队 |
-| IRSTD | D7 | Target-aware 3×3 | — | — | — | — | — | — | 排队 |
+| IRSTD | D4 | Direct Low Fusion | 601 | 0.662392 | 0.657617 | 0.796914 | 0.922559 | 1.640e-5 | 已完成1000 epoch |
+| IRSTD | D5 | Same-position | 118 | 0.676958 | 0.620624 | 0.807364 | 0.932660 | 2.289e-5 | 已完成1000 epoch |
+| IRSTD | D6 | 3×3 Neighborhood | 298 | 0.665016 | 0.631655 | 0.798810 | 0.946128 | 6.069e-5 | 已完成1000 epoch |
+| IRSTD | D7 | Target-aware 3×3 | 191 | 0.673834 | 0.649221 | 0.805138 | 0.925926 | 3.272e-5 | 已完成1000 epoch |
 
 ## 12. 离线 target/background 诊断
 
@@ -243,7 +244,7 @@ Fa 使用绝对比例记录。
 226 服务器 GPU0–6 当前计算进程均属于用户 `cry`，未发现其他用户的 GPU 计算进程。
 登录会话中虽有 `cgzkproj`、`zja`，但未检测到其占用 GPU。
 
-## 15. 最新同步快照（2026-07-17 15:06 CST）
+## 15. 最新同步快照（2026-07-17 16:26 CST）
 
 本节覆盖前一节快照，数据直接读取 226 服务器各输出目录的
 `metrics.jsonl` 和 `best_metrics.json`。表中“最新 epoch”是日志最后一条评估记录，
@@ -259,9 +260,10 @@ Fa 使用绝对比例记录。
 | D6 | NUDT-SIRST | 1000 | 584 | 0.945232 | 0.947691 | 0.971845 | 0.990476 | 1.746e-6 | 已完成 |
 | D7 | NUAA-SIRST | 1000 | 563 | 0.786192 | 0.788801 | 0.880300 | 0.961832 | 2.140e-5 | 已完成 |
 | D7 | IRSTD-1K | 1000 | 191 | 0.673834 | 0.649221 | 0.805138 | 0.925926 | 3.272e-5 | 已完成 |
-| D7 | NUDT-SIRST | 827 | 482 | 0.943340 | 0.946081 | 0.970844 | 0.991534 | 1.563e-6 | 运行中 |
+| D7 | NUDT-SIRST | 888 | 840 | 0.943812 | 0.947057 | 0.971094 | 0.992593 | 1.976e-6 | 用户取消，未完成1000 epoch |
 
-当前 Experiment D 仍有一个训练进程：D7/NUDT-SIRST，GPU1，训练命令为
-`train_experiment_d_hfe_spatial_ablation.py --spatial-hfe-ablation d7_target_neighborhood`，
-Python PID `1767442`，队列 PID `1270595`。D7 NUDT 的最佳指标已经写入
-`best_metrics.json`，待达到 epoch 1000 后再将状态改为最终完成。
+按用户要求，D7/NUDT-SIRST 已停止并将 GPU1 让给 Experiment F；服务器已确认
+对应 Python PID、wrapper PID 和 Experiment D 队列 PID 均不存在。该任务没有
+训练到1000 epoch，因此表中数值只能作为“截至 epoch888 的最佳结果”，不能标成
+完整最终结果。`latest.pth.tar`、`best.pth.tar`、`best_metrics.json`、训练日志和
+`CANCELLED_BY_USER` 标记均保留在原输出目录。

@@ -109,7 +109,7 @@ THOP 不能准确统计 `torch.cdist` 和代码中直接完成的注意力矩阵
 | NUAA-SIRST | `sd_awgm` | 已有结果 | 489 | 0.7799 | 0.7848 | 0.8764 | 0.9466 | 1.935e-5 | 5.926M | 14.38G | 5.15ms |
 | NUAA-SIRST | `sd_awgm_hfe` | 已完成1000 epoch | 286 | 0.7747 | 0.7809 | 0.8731 | 0.9695 | 2.394e-5 | 10.181M | 20.47G | 28.17ms |
 | NUDT-SIRST | `sd_awgm` | 已有结果 | 556 | 0.9058 | 0.9019 | 0.9505 | 0.9852 | 4.182e-6 | 5.926M | 14.38G | 5.15ms |
-| NUDT-SIRST | `sd_awgm_hfe` | GPU0训练中（当前 epoch 919） | 694 | 0.9432 | 0.9490 | 0.9708 | 0.9915 | 4.343e-6 | 10.181M | 20.47G | 28.17ms |
+| NUDT-SIRST | `sd_awgm_hfe` | 已完成1000 epoch | 694 | 0.9432 | 0.9490 | 0.9708 | 0.9915 | 4.343e-6 | 10.181M | 20.47G | 28.17ms |
 | IRSTD-1K | `sd_awgm` | 已有结果 | 894 | 0.6561 | 0.6477 | 0.7924 | 0.9091 | 1.537e-5 | 5.926M | 14.38G | 5.15ms |
 | IRSTD-1K | `sd_awgm_hfe` | 已完成1000 epoch | 556 | 0.6574 | 0.6589 | 0.7933 | 0.9226 | 1.395e-5 | 10.181M | 20.47G | 28.17ms |
 
@@ -195,10 +195,11 @@ NUAA batch4 smoke 均已通过。2026-07-15 23:08 CST 已在 226 启动动态队
 使用 GPU0/1/2 跑 D5 三数据集、GPU6 跑 D6 NUAA，D4 的 GPU3/4/5 未被中断。
 完整记录见 `EXPERIMENT_D_HFE_SPATIAL_CONSISTENCY_RECORD.md`。
 
-## 12. Experiment D 全部消融最新状态（2026-07-17 15:06 CST）
+## 12. Experiment D 全部消融最新状态（2026-07-17 16:26 CST）
 
-本记录的 D1 主模型及 D2–D4 matching/no-matching 结果保持不变；D5–D7 空间
-一致性消融的最新结果已同步到专题记录第 15 节。当前仅 D7/NUDT-SIRST 尚未到
-1000 epoch（最新 epoch 827，最佳 epoch 482，mIoU 0.943340、nIoU 0.946081、
-F1 0.970844、Pd 0.991534、Fa 1.563e-6），其余 D5/D6 三数据集和 D7 的 NUAA、
-IRSTD 均已完成。这样总记录中的 Experiment D 状态与服务器输出保持一致。
+D1–D6 的三个数据集，以及 D7 的 NUAA-SIRST、IRSTD-1K，均已训练到1000 epoch。
+D7/NUDT-SIRST 按用户要求停止于 epoch888；其停止前最佳 checkpoint 为 epoch840：
+mIoU 0.943812、nIoU 0.947057、F1 0.971094、Pd 0.992593、Fa 1.976e-6。该任务
+未完成1000 epoch，不能作为完整最终实验；checkpoint、指标和日志均已保留。
+服务器当前没有 Experiment D 训练进程，GPU1 已交给 Experiment F。完整九项
+D5–D7 结果见空间一致性专题记录第15节。
