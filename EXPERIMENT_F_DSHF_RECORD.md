@@ -141,12 +141,12 @@ loss、评价、训练参数和数据划分与 E1 一致。
 | 4 | F3 | NUAA-SIRST | `F3_cross_direction/NUAA-SIRST/seed42` | GPU4 / 2158925 / 2158933 | 已完成1000 epoch |
 | 5 | F1 | IRSTD-1K | `F1_multiscale/IRSTD-1K/seed42` | GPU5 / 2159332 / 2159340 | 已完成1000 epoch |
 | 6 | F1 | NUDT-SIRST | `F1_multiscale/NUDT-SIRST/seed42` | GPU6 / 2165890 / 2165898 | 已完成1000 epoch |
-| 7 | F4 | IRSTD-1K | `F4_low_guided_full/IRSTD-1K/seed42` | GPU1 / 2169933 / 2169940 | 运行中（epoch936） |
-| 8 | F4 | NUDT-SIRST | `F4_low_guided_full/NUDT-SIRST/seed42` | GPU0 / 2509026 / 2509034 | 运行中（epoch624） |
-| 9 | F2 | IRSTD-1K | `F2_sparse/IRSTD-1K/seed42` | GPU3 / 2533658 / 2533666 | 运行中（epoch646） |
-| 10 | F2 | NUDT-SIRST | `F2_sparse/NUDT-SIRST/seed42` | GPU4 / 2561065 / 2561073 | 运行中（epoch615） |
-| 11 | F3 | IRSTD-1K | `F3_cross_direction/IRSTD-1K/seed42` | GPU2 / 2564255 / 2564263 | 运行中（epoch612） |
-| 12 | F3 | NUDT-SIRST | `F3_cross_direction/NUDT-SIRST/seed42` | GPU5 / 3323500 / 3323508 | 运行中（epoch30，尚未评估） |
+| 7 | F4 | IRSTD-1K | `F4_low_guided_full/IRSTD-1K/seed42` | GPU1 / 2169933 / 2169940 | 已完成1000 epoch |
+| 8 | F4 | NUDT-SIRST | `F4_low_guided_full/NUDT-SIRST/seed42` | GPU0 / 2509026 / 2509034 | 已完成1000 epoch |
+| 9 | F2 | IRSTD-1K | `F2_sparse/IRSTD-1K/seed42` | GPU3 / 2533658 / 2533666 | 已完成1000 epoch |
+| 10 | F2 | NUDT-SIRST | `F2_sparse/NUDT-SIRST/seed42` | GPU4 / 2561065 / 2561073 | 已完成1000 epoch |
+| 11 | F3 | IRSTD-1K | `F3_cross_direction/IRSTD-1K/seed42` | GPU2 / 2564255 / 2564263 | 已完成1000 epoch |
+| 12 | F3 | NUDT-SIRST | `F3_cross_direction/NUDT-SIRST/seed42` | GPU5 / 3323500 / 3323508 | 运行中（epoch664） |
 
 动态队列当前每10秒检查允许列表中的空闲 GPU，要求显存占用小于1000 MiB、利用率
 小于10%且无 compute PID；不会停止或抢占 Experiment D/E 及其他用户任务。
@@ -171,9 +171,9 @@ F1 0.971094、Pd 0.992593、Fa 1.976289e-6，checkpoint 和日志均保留在原
 Experiment F 进程均未停止或重启。以上运行进度快照采集于
 `2026-07-17 16:24 CST`。
 
-最新同步快照采集于 `2026-07-18 15:07 CST`：6项已完成、6项运行中、0项排队、
-0项失败。四项 NUAA 和 F1 的 IRSTD/NUDT 已完成1000 epoch；F3/NUDT 已于
-`2026-07-18 14:49:43 CST` 在 GPU5 启动，至此12项任务均已实际启动。
+最新同步快照采集于 `2026-07-18 22:41 CST`：11项已完成、1项运行中、0项排队、
+0项失败。当前只有 F3/NUDT-SIRST 尚未完成，运行至 epoch664；其余任务均已
+训练到1000 epoch。
 
 ## 10. 结果表
 
@@ -186,18 +186,18 @@ Experiment F 进程均未停止或重启。以上运行进度快照采集于
 | NUAA | F4 | F3 + LFSS Low Guidance | 477 | 0.794258 | 0.798127 | 0.885333 | 0.969466 | 1.640e-5 | 7.354M | 17.782ms | 已完成1000 epoch |
 | IRSTD | F0/E1 | 原DirectionalBandEncoder | 551 | 0.6647 | 0.6630 | 0.7985 | 0.9158 | 1.230e-5 | 7.014M | 12.810ms | 基线 |
 | IRSTD | F1 | Multi-scale | 640 | 0.665652 | 0.671340 | 0.799269 | 0.942761 | 1.382e-5 | 7.282M | 13.126ms | 已完成1000 epoch |
-| IRSTD | F2 | Multi-scale + Sparse | 643 | 0.663382 | 0.654157 | 0.797631 | 0.902357 | 1.082e-5 | 7.350M | 15.629ms | 运行中（epoch646） |
-| IRSTD | F3 | F2 + Cross-direction | 587 | 0.664649 | 0.665058 | 0.798546 | 0.936027 | 1.617e-5 | 7.353M | 17.506ms | 运行中（epoch612） |
-| IRSTD | F4 | F3 + LFSS Low Guidance | 604 | 0.661037 | 0.653661 | 0.795933 | 0.922559 | 1.264e-5 | 7.354M | 17.782ms | 运行中（epoch936） |
+| IRSTD | F2 | Multi-scale + Sparse | 775 | 0.667652 | 0.666804 | 0.800709 | 0.922559 | 1.110e-5 | 7.350M | 15.629ms | 已完成1000 epoch |
+| IRSTD | F3 | F2 + Cross-direction | 675 | 0.670769 | 0.668084 | 0.802947 | 0.919192 | 1.040e-5 | 7.353M | 17.506ms | 已完成1000 epoch |
+| IRSTD | F4 | F3 + LFSS Low Guidance | 604 | 0.661037 | 0.653661 | 0.795933 | 0.922559 | 1.264e-5 | 7.354M | 17.782ms | 已完成1000 epoch |
 | NUDT | F0/E1 | 原DirectionalBandEncoder | 456 | 0.9516 | 0.9482 | 0.9752 | 0.9947 | 1.724e-6 | 7.014M | 12.810ms | 基线 |
 | NUDT | F1 | Multi-scale | 358 | 0.951807 | 0.950017 | 0.975308 | 0.992593 | 1.149e-6 | 7.282M | 13.126ms | 已完成1000 epoch |
-| NUDT | F2 | Multi-scale + Sparse | 310 | 0.955089 | 0.955679 | 0.977029 | 0.991534 | 2.505e-6 | 7.350M | 15.629ms | 运行中（epoch615） |
-| NUDT | F3 | F2 + Cross-direction | — | — | — | — | — | — | 7.353M | 17.506ms | 运行中（epoch30，尚未评估） |
-| NUDT | F4 | F3 + LFSS Low Guidance | 580 | 0.956631 | 0.955744 | 0.977835 | 0.991534 | 1.218e-6 | 7.354M | 17.782ms | 运行中（epoch624） |
+| NUDT | F2 | Multi-scale + Sparse | 310 | 0.955089 | 0.955679 | 0.977029 | 0.991534 | 2.505e-6 | 7.350M | 15.629ms | 已完成1000 epoch |
+| NUDT | F3 | F2 + Cross-direction | 476 | 0.951798 | 0.952349 | 0.975304 | 0.994709 | 1.540e-6 | 7.353M | 17.506ms | 运行中（epoch664） |
+| NUDT | F4 | F3 + LFSS Low Guidance | 580 | 0.956631 | 0.955744 | 0.977835 | 0.991534 | 1.218e-6 | 7.354M | 17.782ms | 已完成1000 epoch |
 
-运行中任务的指标来自当前 `best_metrics.json`，不是1000 epoch最终结果。当前
-NUAA 上 F4 的 mIoU/F1 最好，IRSTD 上已完成的 F1 综合最好，NUDT 上 F4 的
-mIoU/nIoU/F1 暂时最好；F3/NUDT 从 epoch100 开始写入评价指标。
+F3/NUDT 的指标来自当前 `best_metrics.json`，不是1000 epoch最终结果。当前
+NUAA 上 F4 的 mIoU/F1 最好；IRSTD 上 F3 的 mIoU/F1/Fa 最好，F1 的 nIoU/Pd
+最好；NUDT 上 F4 的 mIoU/nIoU/F1 最好，F1 的 Fa 最低。
 
 ## 11. 高频离线诊断
 
