@@ -1,5 +1,10 @@
 # DWTFreqNet 实验记录
 
+> Experiment H：固定 Experiment E1，在四级 Decoder IDWT 前加入 LFP 高频净化，
+> 比较 raw LL 与 E4/L3/L2/L1 两种低频来源以及 H1/H2/H3 三种净化策略。
+> 六个变体 × 三个数据集共18项已在 226 动态队列执行，详见
+> `EXPERIMENT_H_DECODER_LFP_RECORD.md`。
+
 > Experiment E：LFSS 预处理的 AWGM Encoder 已建立独立分支并在 226 服务器
 > 按 E1/E2 × NUAA-SIRST、IRSTD-1K、NUDT-SIRST 共 6 项正式实验排队执行。
 > 完整中文方案、验证、复杂度和实时结果见 `EXPERIMENT_E_LFSS_AWGM_RECORD.md`。
