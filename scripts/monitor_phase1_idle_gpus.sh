@@ -13,6 +13,26 @@ IDLE_UTILIZATION="${IDLE_UTILIZATION:-10}"
 BOOTSTRAP="${BOOTSTRAP:-1000}"
 NUM_RANDOM_REPEATS="${NUM_RANDOM_REPEATS:-20}"
 MAX_SAMPLES="${MAX_SAMPLES:-0}"
+FORMAL_MANIFEST="${FORMAL_MANIFEST:-$ANALYSIS_ROOT/metadata/formal_run_manifest.json}"
+
+read_manifest_pid() {
+  local field="$1"
+  [[ -s "$FORMAL_MANIFEST" ]] || return 0
+  "$PYTHON" - "$FORMAL_MANIFEST" "$field" <<'PY' 2>/dev/null || true
+import json
+import pathlib
+import sys
+
+payload = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+value = payload.get(sys.argv[2], "")
+print(value if isinstance(value, int) and value > 0 else "")
+PY
+}
+
+P2_PRIMARY_PID="${P2_PRIMARY_PID:-$(read_manifest_pid p2_h_pid)}"
+P3_PRIMARY_PID="${P3_PRIMARY_PID:-$(read_manifest_pid p3_pid)}"
+P2_PRIMARY_GPU="${P2_PRIMARY_GPU:-0}"
+P3_PRIMARY_GPU="${P3_PRIMARY_GPU:-5}"
 
 SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/$(basename "${BASH_SOURCE[0]}")"
 SCHEDULER_ROOT="$ANALYSIS_ROOT/idle_gpu_scheduler"
@@ -27,6 +47,7 @@ MONITOR_LOG="$LOG_ROOT/monitor.log"
 mkdir -p "$CLAIM_ROOT" "$SLOT_ROOT" "$TEMP_ROOT" "$BACKUP_ROOT" "$LOG_ROOT" "$STATE_ROOT"
 export ROOT DATASET_DIR ANALYSIS_ROOT E1_ROOT H_ROOT PYTHON POLL_SECONDS
 export IDLE_MEMORY_MIB IDLE_UTILIZATION BOOTSTRAP NUM_RANDOM_REPEATS MAX_SAMPLES
+export FORMAL_MANIFEST P2_PRIMARY_PID P3_PRIMARY_PID P2_PRIMARY_GPU P3_PRIMARY_GPU
 
 log_message() {
   printf '[%s] %s\n' "$(date '+%F %T')" "$*" | tee -a "$MONITOR_LOG"
@@ -128,6 +149,14 @@ task_dependencies_are_ready() {
 
 gpu_is_idle() {
   local index="$1" line memory utilization compute_count
+  if [[ "$index" == "$P2_PRIMARY_GPU" && -n "$P2_PRIMARY_PID" ]] &&
+      kill -0 "$P2_PRIMARY_PID" 2>/dev/null; then
+    return 1
+  fi
+  if [[ "$index" == "$P3_PRIMARY_GPU" && -n "$P3_PRIMARY_PID" ]] &&
+      kill -0 "$P3_PRIMARY_PID" 2>/dev/null; then
+    return 1
+  fi
   line=$(nvidia-smi --id="$index" --query-gpu=memory.used,utilization.gpu --format=csv,noheader,nounits)
   memory=$(echo "$line" | cut -d, -f1 | tr -d ' ')
   utilization=$(echo "$line" | cut -d, -f2 | tr -d ' ')

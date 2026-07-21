@@ -114,7 +114,7 @@ H1-R 已完成1000 epoch并释放原GPU。其余H任务预计在14:26–15:15之
 
 ### 6.2 空闲GPU持续调度
 
-`scripts/monitor_phase1_idle_gpus.sh` 于 `2026-07-21 11:59:33` 启动，监控PID为 `3543146`，每30秒检查全部GPU。只有同时满足显存低于1000 MiB、利用率低于10%且无compute PID时才认领任务。调度器优先补齐P2，再并行P3 train/test，最后在P1/P2指标和六个H权重齐备后执行H交叉分析。
+`scripts/monitor_phase1_idle_gpus.sh` 于 `2026-07-21 11:59:33` 启动，每30秒检查全部GPU。只有同时满足显存低于1000 MiB、利用率低于10%且无compute PID时才认领任务；修正版监控PID为 `3598996`。调度器优先补齐P2，再并行P3 train/test，最后在P1/P2指标和六个H权重齐备后执行H交叉分析。原P2/P3主进程存活期间，GPU 0/5额外标记为保留卡，避免split切换空档被误判为空闲。
 
 为避免与原有P2/P3主进程冲突，监控器使用原子claim、每GPU slot PID、独立临时输出和完成后符号链接发布；如果正式目录已有运行进程或完整summary，则保留临时结果而不覆盖。监控日志位于 `analysis/phase1_task_prior_validation/idle_gpu_scheduler/logs/monitor.log`。Codex任务同时建立了每30分钟一次的心跳检查，只在新GPU开始使用、任务完成、失败或监控器退出时报告。
 
@@ -124,6 +124,7 @@ H1-R 已完成1000 epoch并释放原GPU。其余H任务预计在14:26–15:15之
 - 首次归档部署在服务器语法检查中发现启动脚本带CRLF，正式任务未启动。已为脚本固定LF行尾、保留原smoke目录至`DWTFreqNet_PHASE1_TASK_PRIOR_VALIDATION_SMOKE_20260721_1132`，并用干净Git克隆重新部署；随后`bash -n`、11/11单元测试和受保护代码diff检查全部通过。
 - 首版P3把全部中心扰动与全部候选半径做笛卡尔积，1图约198秒/12MB；修正为训练集先选半径、测试集固定半径后做扰动，并将多通道特征先转为逐点幅值图。保持预定义统计不变后，train/test smoke分别约18/22秒，输出约0.6/1.7MB。
 - P1少样本smoke最初显示No-Go；已按规范修正为任一类别少于30时只标记`Descriptive only`，禁止做正式No-Go结论。
+- `2026-07-21 12:58:43`，GPU 0在P2主进程从IRSTD train切换到test的短暂空档满足空闲阈值，监控器启动了临时NUDT-P2 worker；主进程随后继续占用GPU 0，形成同卡两个不同输出任务。临时worker的正式目录从未发布，已于13:01:47仅终止该临时worker并保留日志/临时输出，原IRSTD test未中断。监控器已增加“主进程存活时保留GPU 0/5”规则并以PID `3598996`重启，复查两个轮询周期未再次误调度。
 
 ## 8. 最终结果与Go/No-Go
 
