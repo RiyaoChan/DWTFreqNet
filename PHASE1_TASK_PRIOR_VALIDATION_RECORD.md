@@ -88,16 +88,20 @@ bash scripts/run_phase1_task_prior_validation.sh
 
 P3遵循发现/确认隔离：训练集仅在零中心偏移下报告全部`Rmax=2/3/4/5`并选择半径；测试集仍报告全部半径的零偏移结果，同时只对训练集选定半径执行完整`0/±0.5/±1/±2`扰动。五种几何、32点、所有stage/source和Random 20次重复均保留。
 
+正式运行于 `2026-07-21 11:33:46 CST` 启动，代码提交为 `cfc83b128fcf9128684dca7ae637893e2000b874`。运行元数据保存在 `analysis/phase1_task_prior_validation/metadata/formal_run_manifest.json`。GPU 0、5 启动前均为空闲；Experiment H 正在使用的 GPU 1/2/3/4/6 未被停止或抢占。
+
 | 任务 | 状态 | PID/日志 | 结果 |
 |---|---|---|---|
-| P1 | 待部署 | — | — |
-| P2 | 待部署 | — | — |
-| P3 | 待部署 | — | — |
-| H交叉分析 | 待部署 | — | NUDT须等H六项完成 |
+| P1（CPU，6项） | 运行中 | PID `3524249`；`logs/phase1_P1_master.log` | 已开始 NUAA-SIRST train 全量分析 |
+| P2（GPU 0，6项） | 运行中 | PID `3524250`；`logs/phase1_P2_H_master.log` | 已开始 NUAA-SIRST train 全量分析 |
+| P3（GPU 5，6项） | 运行中 | PID `3524251`；`logs/phase1_P3_master.log` | 已开始 NUAA-SIRST train 全量分析 |
+| H交叉分析（GPU 0，3项） | 已排队 | 随P2执行；NUDT重试监控PID `3524252` | NUAA/IRSTD在P2后执行；NUDT等待H六项完成后自动执行 |
+| 最终聚合 | 已排队 | PID `3524253`；`logs/phase1_aggregate_monitor.log` | 等待上述正式任务完成后自动汇总 |
 
 ## 7. 错误与重试
 
 - 首次服务器单元测试只有Git基线检查失败：部署副本无`.git`，数值测试均通过。已改为无Git副本明确skip，并保留正式分支commit级检查及服务器源目录diff。
+- 首次归档部署在服务器语法检查中发现启动脚本带CRLF，正式任务未启动。已为脚本固定LF行尾、保留原smoke目录至`DWTFreqNet_PHASE1_TASK_PRIOR_VALIDATION_SMOKE_20260721_1132`，并用干净Git克隆重新部署；随后`bash -n`、11/11单元测试和受保护代码diff检查全部通过。
 - 首版P3把全部中心扰动与全部候选半径做笛卡尔积，1图约198秒/12MB；修正为训练集先选半径、测试集固定半径后做扰动，并将多通道特征先转为逐点幅值图。保持预定义统计不变后，train/test smoke分别约18/22秒，输出约0.6/1.7MB。
 - P1少样本smoke最初显示No-Go；已按规范修正为任一类别少于30时只标记`Descriptive only`，禁止做正式No-Go结论。
 
