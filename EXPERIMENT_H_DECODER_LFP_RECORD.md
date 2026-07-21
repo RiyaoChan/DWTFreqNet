@@ -78,7 +78,7 @@ R/D 三组配对的参数量与 FLOPs 完全一致，低频来源本身没有引
 
 ## 8. 运行状态与结果
 
-结果更新时间：2026-07-21 19:34（Asia/Shanghai）。全部结果均直接读取服务器对应正式运行目录的 `best_metrics.json`/`train.log`；`best epoch/mIoU` 为 1000 epoch 内的历史最佳，nIoU、F1、Pd、Fa 均取同一 best-mIoU epoch，Fa 越低越好。三个数据集、六个变体共 18 项训练现已全部完成 1000 epoch，0 项运行、0 项排队、0 项失败。
+结果更新时间：2026-07-21 23:14（Asia/Shanghai）。全部结果均直接读取服务器对应正式运行目录的 `best_metrics.json`/`train.log`；`best epoch/mIoU` 为 1000 epoch 内的历史最佳，nIoU、F1、Pd、Fa 均取同一 best-mIoU epoch，Fa 越低越好。三个数据集、六个变体共 18 项训练现已全部完成 1000 epoch，0 项运行、0 项排队、0 项失败；本次复核未发现结果变化。
 
 ### 8.1 NUAA-SIRST 最终结果
 
