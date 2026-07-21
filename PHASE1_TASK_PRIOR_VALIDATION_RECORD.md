@@ -92,29 +92,19 @@ P3遵循发现/确认隔离：训练集仅在零中心偏移下报告全部`Rmax
 
 | 任务 | 状态 | PID/日志 | 结果 |
 |---|---|---|---|
-| P1（CPU，6项） | 5项完成、1项运行 | PID `3524249`；`logs/phase1_P1_master.log` | NUAA/IRSTD train/test及NUDT train完成；NUDT test运行中 |
+| P1（CPU，6项） | **全部完成** | `P1_gaussian_geometry/<DATASET>/<SPLIT>/summary.json` | 三数据集train/test均已生成正式summary |
 | P2（GPU，6项） | **全部完成** | `P2_wavelet_consistency/<DATASET>/<SPLIT>/summary.json` | 三数据集train/test均已生成正式summary |
-| P3（GPU，6项） | 3项完成、2项运行、1项等待 | PID `3524251`及空闲GPU调度器 | NUAA train/test、NUDT train完成；NUDT test与IRSTD train运行中 |
-| H交叉分析（动态GPU，3项） | 2项完成、1项等待 | NUDT重试监控PID `3524252` | NUAA/IRSTD完成；NUDT等待六个Experiment H权重完成 |
+| P3（GPU，6项） | 4项完成、2项运行 | 空闲GPU调度器PID `3598996` | NUAA train/test、NUDT train、IRSTD train完成；NUDT/IRSTD test运行中 |
+| H交叉分析（动态GPU，3项） | **全部完成** | `H_cross_analysis/<DATASET>/summary.json` | NUAA/IRSTD/NUDT均已完成 |
 | 最终聚合 | 已排队 | PID `3524253`；`logs/phase1_aggregate_monitor.log` | 等待上述正式任务完成后自动汇总 |
 
-### 6.1 Experiment H GPU释放时间估计
+### 6.1 Experiment H GPU释放情况
 
-状态更新时间为 `2026-07-21 15:53`。预计时间按各任务此前约21–22秒/epoch估算；训练速度变化会带来约10–20分钟误差。
-
-| GPU | H任务 | 当前epoch | 中位秒/epoch | 预计完成时间 |
-|---:|---|---:|---:|---|
-| 2 | H1-D / NUDT-SIRST | 898 | 约21.1 | 约16:29 |
-| 3 | H2-R / NUDT-SIRST | 849 | 约21.1 | 约16:46 |
-| 1 | H2-D / NUDT-SIRST | 808 | 约21.7 | 约17:02 |
-| 4 | H3-R / NUDT-SIRST | 765 | 约21.9 | 约17:19 |
-| 6 | H3-D / NUDT-SIRST | 753 | 约21.6 | 约17:22 |
-
-H1-R 已完成1000 epoch并释放原GPU。其余H任务预计在16:29–17:22之间依次释放GPU；空闲GPU调度器只会在显存、利用率和compute PID三项条件同时满足时使用释放的GPU。
+截至 `2026-07-21 19:34`，Experiment H 的 18 项训练已经全部完成 1000 epoch并释放GPU。H权重齐备后，NUDT-SIRST 的H交叉分析已于19:03完成并发布正式summary；Phase 1没有停止或抢占任何H训练。
 
 ### 6.2 空闲GPU持续调度
 
-`scripts/monitor_phase1_idle_gpus.sh` 于 `2026-07-21 11:59:33` 启动，每30秒检查全部GPU。只有同时满足显存低于1000 MiB、利用率低于10%且无compute PID时才认领任务；修正版监控PID为 `3598996`。调度器优先补齐P2，再并行P3 train/test，最后在P1/P2指标和六个H权重齐备后执行H交叉分析。原P2/P3主进程存活期间，GPU 0/5额外标记为保留卡，避免split切换空档被误判为空闲。
+`scripts/monitor_phase1_idle_gpus.sh` 于 `2026-07-21 11:59:33` 启动，每30秒检查全部GPU。只有同时满足显存低于1000 MiB、利用率低于10%且无compute PID时才认领任务；监控PID `3598996` 截至19:34仍正常存活。调度器已经补齐P2、P3 train和三项H交叉分析；当前仅GPU 0上的NUDT P3 test和GPU 5上的IRSTD P3 test尚未完成，监控器继续负责防重复发布与最终收尾。
 
 为避免与原有P2/P3主进程冲突，监控器使用原子claim、每GPU slot PID、独立临时输出和完成后符号链接发布；如果正式目录已有运行进程或完整summary，则保留临时结果而不覆盖。监控日志位于 `analysis/phase1_task_prior_validation/idle_gpu_scheduler/logs/monitor.log`。Codex任务同时建立了每30分钟一次的心跳检查，只在新GPU开始使用、任务完成、失败或监控器退出时报告。
 
@@ -128,7 +118,7 @@ H1-R 已完成1000 epoch并释放原GPU。其余H任务预计在16:29–17:22之
 
 ## 8. 正式阶段结果与Go/No-Go
 
-结果更新时间：2026-07-21 15:53（Asia/Shanghai）。本节只记录正式全量输出；train/test均完成且结论一致时可视为当前数据集上的确认结果，只有train完成的项目明确标为阶段性结果。最终跨数据集结论仍等待P1 NUDT test、P3 IRSTD/NUDT test、NUDT H交叉分析和最终聚合。
+结果更新时间：2026-07-21 19:34（Asia/Shanghai）。本节只记录正式全量输出；P1、P2和H交叉分析均已完成，P3仅剩IRSTD/NUDT测试集任务。最终跨数据集结论仍等待这两项P3测试和最终聚合。
 
 ### 8.1 P1：Gaussian目标几何先验
 
@@ -140,10 +130,10 @@ H1-R 已完成1000 epoch并释放原GPU。其余H任务预计在16:29–17:22之
 | NUAA-SIRST | test | 0.9231 / 0.5282 | 14.7250 / 8.0068 | R2、Compactness | **Go** |
 | IRSTD-1K | train | 0.8999 / 0.4412 | 15.1287 / 7.5722 | R2、Compactness | **Go** |
 | IRSTD-1K | test | 0.9066 / 0.4499 | 15.5729 / 7.9744 | R2、Compactness | **Go** |
-| NUDT-SIRST | train | 0.8195 / 0.5672 | 15.7733 / 8.5799 | Compactness | **Partial Go（阶段性）** |
-| NUDT-SIRST | test | — | — | 运行中 | Pending |
+| NUDT-SIRST | train | 0.8195 / 0.5672 | 15.7733 / 8.5799 | Compactness | **Partial Go** |
+| NUDT-SIRST | test | 0.8356 / 0.5842 | 16.2238 / 8.4783 | Compactness | **Partial Go** |
 
-NUAA和IRSTD在发现集与确认集上均稳定支持R2和Compactness，Gaussian目标几何先验为Go。NUDT train中Compactness得到支持，但R2仅有一半稳健性设置保持预期方向，因此目前只能记为Partial Go，不能替代尚未完成的test结论。
+NUAA和IRSTD在发现集与确认集上均稳定支持R2和Compactness，Gaussian目标几何先验为Go。NUDT train/test均只稳定支持Compactness；R2虽有显著差异，但都只有一半稳健性设置保持预期方向，因此确认结论为Partial Go。
 
 ### 8.2 P2：低频与方向一致性先验
 
@@ -167,11 +157,11 @@ NUAA和IRSTD在发现集与确认集上均稳定支持R2和Compactness，Gaussia
 | NUAA-SIRST | train | 213 | 2 / 2 / 2 / 2 / 2 | 通过 | **Go** |
 | NUAA-SIRST | test | 214 | 固定使用train选择 | 通过 | **Go** |
 | NUDT-SIRST | train | 663 | 2 / 2 / 2 / 2 / 2 | 通过 | **Go（阶段性）** |
-| NUDT-SIRST | test | — | 固定使用train选择 | — | 运行中（GPU 0） |
-| IRSTD-1K | train | — | 计算中 | — | 运行中（GPU 5） |
-| IRSTD-1K | test | — | 等待train选择 | — | Pending |
+| NUDT-SIRST | test | 664 | 固定使用train选择 | 计算中 | 运行中（GPU 0，390/664） |
+| IRSTD-1K | train | 800 | 2 / 2 / 2 / 2 / 2 | 通过 | **Go（阶段性）** |
+| IRSTD-1K | test | 201 | 固定使用train选择 | 计算中 | 运行中（GPU 5，10/201） |
 
-NUAA已完成发现/确认隔离并为Go；NUDT train同样选择所有stage的`Rmax=2`并通过公平性检查，但仍需test确认。IRSTD尚未形成正式summary。
+NUAA已完成发现/确认隔离并为Go；NUDT与IRSTD的train也都选择所有stage的`Rmax=2`并通过公平性检查，阶段判定均为Go。两个测试集正在以各自训练集选定半径执行完整中心扰动验证，完成前不把阶段性Go提升为确认结论。
 
 ### 8.4 Experiment H交叉分析
 
@@ -179,13 +169,13 @@ NUAA已完成发现/确认隔离并为Go；NUDT train同样选择所有stage的`
 |---|---:|---:|---:|---|
 | NUAA-SIRST | 214 | 6变体×4stage，共24项；target-hard gap全部为负 | 76 | H3-D stage1 与 `C_LL`：rho=-0.8071 |
 | IRSTD-1K | 201 | 6变体×4stage，共24项；target-hard gap全部为负 | 56 | H1-D stage1 与 `C_LL`：rho=-0.7375 |
-| NUDT-SIRST | — | 等待六个H权重完成 | — | Pending |
+| NUDT-SIRST | 664 | 6变体×4stage，共24项；target-hard gap全部为负 | 93 | H3-D stage1 与 `C_LL`：rho=-0.8123 |
 
-这里的负gap只表示当前attention数值在target区域低于配对hard-negative区域；强相关项按脚本预定义阈值筛选。由于NUDT尚未完成，当前只记录现象，不提前给出跨数据集因果解释或最终Go/No-Go。
+三个数据集的24项attention分离统计均为负gap，即当前attention数值在target区域低于配对hard-negative区域；强相关项按脚本预定义阈值筛选。该现象已跨三数据集复现，但它是相关性诊断，不足以单独证明因果机制或直接给出模型Go/No-Go。
 
 ### 8.5 当前阶段结论
 
-- 可正式记录：P1 NUAA/IRSTD为Go；P2全部结论；P3 NUAA为Go；NUAA/IRSTD的H交叉统计已完成。
-- 仅阶段性记录：P1 NUDT train为Partial Go；P3 NUDT train为Go。
-- 尚不可定论：P1 NUDT test、P3 IRSTD/NUDT test、H交叉NUDT和最终聚合。
+- 可正式记录：P1 NUAA/IRSTD为Go、NUDT为Partial Go；P2全部结论；P3 NUAA为Go；三数据集的H交叉统计已完成。
+- 仅阶段性记录：P3 NUDT/IRSTD train均为Go。
+- 尚不可定论：P3 IRSTD/NUDT test与最终聚合。
 - Phase 1完成前不启动I1/I2/I3/I4/I5/GCSWR或任何新模型训练。
