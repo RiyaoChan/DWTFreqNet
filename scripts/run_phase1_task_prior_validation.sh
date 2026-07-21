@@ -17,6 +17,7 @@ RUN_P1="${RUN_P1:-1}"
 RUN_P2="${RUN_P2:-1}"
 RUN_P3="${RUN_P3:-1}"
 RUN_H_CROSS="${RUN_H_CROSS:-1}"
+RUN_AGGREGATE="${RUN_AGGREGATE:-1}"
 GPU_POLL_SECONDS="${GPU_POLL_SECONDS:-30}"
 NUM_RANDOM_REPEATS="${NUM_RANDOM_REPEATS:-20}"
 BOOTSTRAP="${BOOTSTRAP:-1000}"
@@ -186,8 +187,10 @@ if [[ "$RUN_H_CROSS" == "1" ]]; then
   done
 fi
 
-"$PYTHON" tools/phase1/aggregate_phase1_report.py \
-  --analysis-root "$ANALYSIS_ROOT" --output-dir "$ANALYSIS_ROOT/final" \
-  >"$ANALYSIS_ROOT/logs/aggregate.log" 2>&1
+if [[ "$RUN_AGGREGATE" == "1" ]]; then
+  "$PYTHON" tools/phase1/aggregate_phase1_report.py \
+    --analysis-root "$ANALYSIS_ROOT" --output-dir "$ANALYSIS_ROOT/final" \
+    >"$ANALYSIS_ROOT/logs/aggregate.log" 2>&1
+fi
 
 echo "Phase 1 execution pass finished at $(date '+%F %T')"
