@@ -202,6 +202,11 @@ bash scripts/run_w8m_stage1_dataset.sh \
 The server-side baseline, full, ablation, and pretrained-weight evaluation
 results are summarized in [EXPERIMENT_RECORD.md](EXPERIMENT_RECORD.md).
 
+Experiment J adds a strictly isolated dual-evidence noise-calibrated
+purification (DENP) study on the fixed E1 model. Its implementation, 15-task
+training matrix, tests, profiling protocol, and current results are documented
+in [EXPERIMENT_J_DENP_RECORD.md](EXPERIMENT_J_DENP_RECORD.md).
+
 ---
 
 ### ▶️ Step 3: Run Test

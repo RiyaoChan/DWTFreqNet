@@ -307,3 +307,7 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 按最新调度要求，新服务器上的全部训练任务和 W8M/Experiment B 调度器已停止。
 停止前的 W8M/Mamba 结果已在第 18 节记录；所有 checkpoint、`metrics.jsonl`、
 `best_metrics.json` 和日志文件均保留，后续如需恢复可从 `latest.pth.tar` 继续。
+
+## 20. Experiment J：DENP
+
+Experiment J 在固定 E1 主体上研究“高频噪声尺度 + raw LL/Decoder low 双低频保护证据”驱动的 decoder 高频净化。J0 只做严格回归；J1、J2-R、J2-D、J3-F、J3-R 将在 NUAA-SIRST、IRSTD-1K、NUDT-SIRST 上各训练 1000 epoch，共 15 项正式任务。实现、测试、复杂度、PID、当前进度、性能结果和 Go/No-Go 统一记录在 [EXPERIMENT_J_DENP_RECORD.md](EXPERIMENT_J_DENP_RECORD.md)。
