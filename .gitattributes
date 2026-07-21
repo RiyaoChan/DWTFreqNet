@@ -1,1 +1,2 @@
 scripts/run_phase1_task_prior_validation.sh text eol=lf
+scripts/monitor_phase1_idle_gpus.sh text eol=lf

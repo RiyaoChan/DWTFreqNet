@@ -92,11 +92,31 @@ P3遵循发现/确认隔离：训练集仅在零中心偏移下报告全部`Rmax
 
 | 任务 | 状态 | PID/日志 | 结果 |
 |---|---|---|---|
-| P1（CPU，6项） | 运行中 | PID `3524249`；`logs/phase1_P1_master.log` | 已开始 NUAA-SIRST train 全量分析 |
-| P2（GPU 0，6项） | 运行中 | PID `3524250`；`logs/phase1_P2_H_master.log` | 已开始 NUAA-SIRST train 全量分析 |
-| P3（GPU 5，6项） | 运行中 | PID `3524251`；`logs/phase1_P3_master.log` | 已开始 NUAA-SIRST train 全量分析 |
-| H交叉分析（GPU 0，3项） | 已排队 | 随P2执行；NUDT重试监控PID `3524252` | NUAA/IRSTD在P2后执行；NUDT等待H六项完成后自动执行 |
+| P1（CPU，6项） | 运行中 | PID `3524249`；`logs/phase1_P1_master.log` | NUAA-SIRST train 全量分析中 |
+| P2（GPU 0，6项） | 运行中 | PID `3524250`；`logs/phase1_P2_H_master.log` | NUAA train/test已完成；IRSTD train运行中 |
+| P3（GPU 5，6项） | 运行中 | PID `3524251`；`logs/phase1_P3_master.log` | NUAA train已完成；NUAA test运行中 |
+| H交叉分析（动态GPU，3项） | 等待依赖 | 随P2执行；NUDT重试监控PID `3524252` | 同时等待对应P1/P2 test指标和H六项完成 |
 | 最终聚合 | 已排队 | PID `3524253`；`logs/phase1_aggregate_monitor.log` | 等待上述正式任务完成后自动汇总 |
+
+### 6.1 Experiment H GPU释放时间估计
+
+估计时间为 `2026-07-21 11:54` 按各任务最近20个epoch耗时中位数计算；训练速度变化会带来约10–20分钟误差。
+
+| GPU | H任务 | 当前epoch | 中位秒/epoch | 预计完成时间 |
+|---:|---|---:|---:|---|
+| 2 | H1-D / NUDT-SIRST | 569 | 21.075 | 14:26 |
+| 3 | H2-R / NUDT-SIRST | 529 | 21.075 | 14:40 |
+| 1 | H2-D / NUDT-SIRST | 489 | 21.689 | 14:59 |
+| 4 | H3-R / NUDT-SIRST | 460 | 21.900 | 15:12 |
+| 6 | H3-D / NUDT-SIRST | 444 | 21.585 | 15:15 |
+
+H1-R 已完成1000 epoch并释放原GPU。其余H任务预计在14:26–15:15之间依次释放GPU。
+
+### 6.2 空闲GPU持续调度
+
+`scripts/monitor_phase1_idle_gpus.sh` 于 `2026-07-21 11:59:33` 启动，监控PID为 `3543146`，每30秒检查全部GPU。只有同时满足显存低于1000 MiB、利用率低于10%且无compute PID时才认领任务。调度器优先补齐P2，再并行P3 train/test，最后在P1/P2指标和六个H权重齐备后执行H交叉分析。
+
+为避免与原有P2/P3主进程冲突，监控器使用原子claim、每GPU slot PID、独立临时输出和完成后符号链接发布；如果正式目录已有运行进程或完整summary，则保留临时结果而不覆盖。监控日志位于 `analysis/phase1_task_prior_validation/idle_gpu_scheduler/logs/monitor.log`。Codex任务同时建立了每30分钟一次的心跳检查，只在新GPU开始使用、任务完成、失败或监控器退出时报告。
 
 ## 7. 错误与重试
 
