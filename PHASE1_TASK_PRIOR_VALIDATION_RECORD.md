@@ -10,7 +10,7 @@
 | Phase 1 branch | `codex/phase1-irst-task-prior-validation` |
 | 本地独立 worktree | `G:\DWTFreqNet-main\DWTFreqNet-phase1` |
 | 服务器独立目录 | `/DATA20T/bip/cry/code/DWTFreqNet_PHASE1_TASK_PRIOR_VALIDATION` |
-| Draft PR | 待代码与首轮验收完成后创建 |
+| Draft PR | `https://github.com/RiyaoChan/DWTFreqNet/pull/8` |
 
 本阶段只新增 `tools/phase1/*`、一键脚本和记录/报告；不修改 `model/*`、`train*.py`、`dataset.py`、`train_one.py`、训练配置或正式 checkpoint。
 

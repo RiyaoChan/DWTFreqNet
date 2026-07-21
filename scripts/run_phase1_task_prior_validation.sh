@@ -29,22 +29,32 @@ should_skip() {
   [[ "$SKIP_EXISTING" == "1" && -s "$marker" ]]
 }
 
+gpu_is_idle() {
+  local index="$1" line memory utilization compute_count
+  line=$(nvidia-smi --id="$index" --query-gpu=memory.used,utilization.gpu --format=csv,noheader,nounits)
+  memory=$(echo "$line" | cut -d, -f1 | tr -d ' ')
+  utilization=$(echo "$line" | cut -d, -f2 | tr -d ' ')
+  compute_count=$(nvidia-smi pmon -c 1 | awk -v gpu="$index" '$1==gpu && $3=="C" {count++} END {print count+0}')
+  (( memory < 1000 && utilization < 10 && compute_count == 0 ))
+}
+
 pick_idle_gpu() {
-  if [[ "$DEVICE" != "auto" ]]; then
-    echo "$DEVICE"
-    return
-  fi
   while true; do
+    if [[ "$DEVICE" != "auto" ]]; then
+      local requested="${DEVICE#cuda:}"
+      if gpu_is_idle "$requested"; then
+        echo "cuda:$requested"
+        return
+      fi
+      echo "[$(date '+%F %T')] requested GPU $requested is busy; waiting ${GPU_POLL_SECONDS}s" >&2
+      sleep "$GPU_POLL_SECONDS"
+      continue
+    fi
     local gpu_count
     gpu_count=$(nvidia-smi --query-gpu=index --format=csv,noheader | wc -l)
     local index
     for ((index=0; index<gpu_count; index++)); do
-      local line memory utilization compute_count
-      line=$(nvidia-smi --id="$index" --query-gpu=memory.used,utilization.gpu --format=csv,noheader,nounits)
-      memory=$(echo "$line" | cut -d, -f1 | tr -d ' ')
-      utilization=$(echo "$line" | cut -d, -f2 | tr -d ' ')
-      compute_count=$(nvidia-smi pmon -c 1 | awk -v gpu="$index" '$1==gpu && $3=="C" {count++} END {print count+0}')
-      if (( memory < 1000 && utilization < 10 && compute_count == 0 )); then
+      if gpu_is_idle "$index"; then
         echo "cuda:$index"
         return
       fi
