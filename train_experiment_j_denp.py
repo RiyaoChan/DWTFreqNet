@@ -142,9 +142,17 @@ def validate_initialization(model):
             if abs(float(module.threshold.detach())) > 1e-7:
                 raise RuntimeError("Experiment J compactness threshold initialization is not 0.0")
         if processor.use_reliability:
-            if not torch.allclose(processor.gamma_raw.detach(), torch.ones(3), atol=1e-6):
+            if not torch.allclose(
+                processor.gamma_raw.detach(),
+                torch.ones_like(processor.gamma_raw),
+                atol=1e-6,
+            ):
                 raise RuntimeError("Experiment J gamma_R initialization is not 1.0")
-            if not torch.allclose(processor.gamma_decoder.detach(), torch.ones(3), atol=1e-6):
+            if not torch.allclose(
+                processor.gamma_decoder.detach(),
+                torch.ones_like(processor.gamma_decoder),
+                atol=1e-6,
+            ):
                 raise RuntimeError("Experiment J gamma_D initialization is not 1.0")
 
 
