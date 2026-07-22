@@ -22,6 +22,15 @@ E2 replaces it with a fixed Conv1x1-BN-GELU transition. The Chinese protocol,
 validation, complexity, queue and live results are recorded in
 `EXPERIMENT_E_LFSS_AWGM_RECORD.md`.
 
+## Experiment H: E1 decoder LFP purification
+
+`model/DWTFreqNet_SingleDecoder_LFSS_AWGM_DecoderLFP.py` keeps the E1 encoder
+and decoder body fixed and purifies aligned raw H/V/D immediately before all
+four decoder IDWT stages. Six formal variants compare raw-LL versus decoder-low
+attention sources and attention-only, fixed-Gaussian, or adaptive-Gaussian
+purification. The Chinese design, validation, complexity and live 18-task queue
+are recorded in `EXPERIMENT_H_DECODER_LFP_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
