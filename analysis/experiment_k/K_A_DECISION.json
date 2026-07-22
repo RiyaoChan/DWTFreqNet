@@ -1,0 +1,29 @@
+{
+  "discovery_complete": false,
+  "confirmation_complete": false,
+  "compactness_treatment_go": false,
+  "preferred_operator": null,
+  "preferred_source": null,
+  "active_stages": [],
+  "stage4_source": null,
+  "rho_init": 0.05,
+  "rho_max": 0.5,
+  "operator_fidelity": {},
+  "treatment_effect": {},
+  "prior_drift": {},
+  "mad_audit": {},
+  "variants_to_train": [
+    "k2_dose_calibrated"
+  ],
+  "global_candidates_for_nudt": [],
+  "cancelled_variants": {
+    "k3_gr_raw_all": "等待K-A4处理效应判定",
+    "k4_gr_lfss_s123": "等待K-A4处理效应判定",
+    "k5_gr_guided_s123": "等待K-A4处理效应判定",
+    "k6_gr_selected_hybrid": "仅在train discovery预注册stage混合后允许"
+  },
+  "decision_reason": [
+    "K2不依赖Compactness结论，按规范优先运行NUAA与IRSTD。",
+    "K3-K6在K-A discovery与confirmation锁定前禁止启动。"
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "j1_bandwise_noise_calibrated": "/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_J_DENP/runs/experiment_j_denp/J1_bandwise_noise_calibrated/NUAA-SIRST/seed42/best.pth.tar",
+  "j2_rawll_compactness": "/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_J_DENP/runs/experiment_j_denp/J2_rawll_compactness/NUAA-SIRST/seed42/best.pth.tar",
+  "j2_decoder_compactness": "/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_J_DENP/runs/experiment_j_denp/J2_decoder_compactness/NUAA-SIRST/seed42/best.pth.tar",
+  "j3_dual_evidence_fixed": "/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_J_DENP/runs/experiment_j_denp/J3_dual_evidence_fixed/NUAA-SIRST/seed42/best.pth.tar",
+  "j3_dual_evidence_reliability": "/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_J_DENP/runs/experiment_j_denp/J3_dual_evidence_reliability/NUAA-SIRST/seed42/best.pth.tar"
+}
