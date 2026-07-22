@@ -307,3 +307,13 @@ Stage 1 于 2026-07-10 11:49 CST 启动。原先六个任务全部使用 NUDT-SI
 按最新调度要求，新服务器上的全部训练任务和 W8M/Experiment B 调度器已停止。
 停止前的 W8M/Mamba 结果已在第 18 节记录；所有 checkpoint、`metrics.jsonl`、
 `best_metrics.json` 和日志文件均保留，后续如需恢复可从 `latest.pth.tar` 继续。
+
+## 20. Phase 1红外小目标任务先验验证
+
+从 Experiment H 最新提交 `8cfd7a97bd460b07efbad28ca7b709d7277cdd1b`
+建立独立分支 `codex/phase1-irst-task-prior-validation`。本阶段不训练新模型，
+也不修改任何 `model/*` 或训练代码；只通过 P1 Gaussian/椭圆紧凑性、P2
+LL/H/V/D方向一致性、P3公平结构化采样几何和 Experiment H 交叉分析验证
+任务先验。完整实现、资源规则、PID、错误与结果见
+`PHASE1_TASK_PRIOR_VALIDATION_RECORD.md`，最终输出位于
+`analysis/phase1_task_prior_validation/final/`。

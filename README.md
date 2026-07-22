@@ -31,6 +31,19 @@ attention sources and attention-only, fixed-Gaussian, or adaptive-Gaussian
 purification. The Chinese design, validation, complexity and live 18-task queue
 are recorded in `EXPERIMENT_H_DECODER_LFP_RECORD.md`.
 
+## Phase 1: IRST task-prior validation
+
+`tools/phase1/` provides training-free diagnostics for three questions that
+must be answered before any new prior-driven module is designed: whether real
+targets have a reproducible Gaussian/elliptical compactness advantage over
+matched hard negatives, whether calibrated LL/H/V/D consistency is stable,
+and whether a 32-point spiral is fairly better than grid, ring, random, and
+Gaussian-radial sampling. The tools do not modify model or training code. Run
+the full discovery/confirmation protocol with
+`scripts/run_phase1_task_prior_validation.sh`; implementation, scheduling,
+checkpoint provenance, and results are recorded in
+`PHASE1_TASK_PRIOR_VALIDATION_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
