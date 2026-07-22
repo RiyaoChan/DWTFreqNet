@@ -10,7 +10,7 @@
 - 分支：`codex/experiment-k-e1-centered-dose-purification`
 - 本地工作区：`G:/DWTFreqNet-main/DWTFreqNet-experiment-k`
 - 服务器目录：`/DATA20T/bip/cry/code/DWTFreqNet_EXPERIMENT_K_E1_CENTERED`
-- Draft PR：尚未创建
+- Draft PR：[#10 Experiment K: E1-centered dose-calibrated purification](https://github.com/RiyaoChan/DWTFreqNet/pull/10)，base=`codex/experiment-j-dual-evidence-denp`
 - Experiment J：未停止、未覆盖、未修改其代码或输出目录
 
 ## 2. 核心代码改动
