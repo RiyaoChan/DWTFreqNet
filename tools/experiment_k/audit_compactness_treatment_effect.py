@@ -111,6 +111,7 @@ def main():
     if args.max_samples:
         image_ids = image_ids[:args.max_samples]
     model, checkpoint = load_j1_as_k(args.j1_checkpoint, device)
+    model.debug_tensors = True
     model.k_source_map = {stage: "raw_ll" for stage in range(1, 5)}
     model.rho_override = 0.0
     rows = []
