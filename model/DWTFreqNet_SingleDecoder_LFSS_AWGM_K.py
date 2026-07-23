@@ -229,10 +229,17 @@ class DWTFreqNet_SingleDecoder_LFSS_AWGM_K(DWTFreqNet_SingleDecoder_LFSS_AWGM):
             for direction, raw in zip(K_BANDS, (raw_h, raw_v, raw_d))
         )
 
-    def _purify_stage_high(self, stage, raw_bands):
+    def _purify_stage_high(self, stage, raw_bands, decoder_low):
         aligned = self._align_stage_high(stage, raw_bands)
         source_name = self.k_source_map[stage]
-        prior = self._k_low_sources[stage].get(source_name) if source_name else None
+        if source_name == "decoder_low":
+            prior = decoder_low
+        else:
+            prior = self._k_low_sources[stage].get(source_name) if source_name else None
+        if source_name is not None and prior is None:
+            raise RuntimeError(
+                f"Experiment K source {source_name!r} is unavailable at stage {stage}"
+            )
         if not self.use_k_purification:
             return (*aligned, {
                 "prior_source": None,
@@ -325,16 +332,18 @@ class DWTFreqNet_SingleDecoder_LFSS_AWGM_K(DWTFreqNet_SingleDecoder_LFSS_AWGM):
             current = encoded[stage]
 
         stage_debug = {}
-        h4, v4, d4, stage_debug[4] = self._purify_stage_high(4, raw_bands)
+        h4, v4, d4, stage_debug[4] = self._purify_stage_high(
+            4, raw_bands, encoded[4]
+        )
         u3 = self._idwt(encoded[4], h4, v4, d4)
         l3 = self.decoder_fuse3(torch.cat([u3, encoded[3]], dim=1))
-        h3, v3, d3, stage_debug[3] = self._purify_stage_high(3, raw_bands)
+        h3, v3, d3, stage_debug[3] = self._purify_stage_high(3, raw_bands, l3)
         u2 = self._idwt(l3, h3, v3, d3)
         l2 = self.decoder_fuse2(torch.cat([u2, encoded[2]], dim=1))
-        h2, v2, d2, stage_debug[2] = self._purify_stage_high(2, raw_bands)
+        h2, v2, d2, stage_debug[2] = self._purify_stage_high(2, raw_bands, l2)
         u1 = self._idwt(l2, h2, v2, d2)
         l1 = self.decoder_fuse1(torch.cat([u1, encoded[1]], dim=1))
-        h1, v1, d1, stage_debug[1] = self._purify_stage_high(1, raw_bands)
+        h1, v1, d1, stage_debug[1] = self._purify_stage_high(1, raw_bands, l1)
         u0 = self._idwt(l1, h1, v1, d1)
         l0 = self.decoder_fuse0(torch.cat([u0, x0], dim=1))
         out = self.out_head(l0)

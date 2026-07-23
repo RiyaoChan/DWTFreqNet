@@ -22,7 +22,9 @@ trap 'rm -f "${QUEUE_ROOT}/queue.pid"' EXIT
 
 IFS=',' read -r -a GPUS <<< "${GPU_ALLOWLIST}"
 DATASETS=("NUAA-SIRST" "IRSTD-1K")
-MODES=("fidelity" "prior" "treatment" "counterfactual" "mad")
+# Recompute MAD correlations immediately after a corrected treatment run before
+# starting the much longer counterfactual sweep.
+MODES=("fidelity" "prior" "treatment" "mad" "counterfactual")
 
 log() {
     printf '[%s] %s\n' "$(date '+%F %T')" "$*" | tee -a "${QUEUE_ROOT}/queue.log"

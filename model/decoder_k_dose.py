@@ -252,8 +252,11 @@ class DoseCalibratedBandPurifier(nn.Module):
                 output = band
             elif ((not self.learnable_alpha and self.fixed_alpha == 1.0)
                   or (alpha_override is not None and float(alpha_override) == 1.0)) \
-                    and (protection is None or bypass_protection):
+                    and (protection is None or bypass_protection) \
+                    and spatial_dose_override is None:
                 # Preserve the exact J1 arithmetic order for the strict regression.
+                # A spatial override is an explicit counterfactual intervention and
+                # must use the dose computed above instead of bypassing it here.
                 output = (1.0 - noise) * band + noise * gaussian
                 dose = noise
             else:

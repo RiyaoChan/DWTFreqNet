@@ -28,11 +28,16 @@ if ! flock -n 8; then echo "Diagnosis already running: ${OUTPUT_DIR}" >&2; exit 
 if [[ -f "${OUTPUT_DIR}/DIAGNOSIS_COMPLETE" ]]; then echo "Already complete: ${OUTPUT_DIR}"; exit 0; fi
 if [[ -f "${OUTPUT_DIR}/FAILED" ]]; then echo "FAILED marker exists: ${OUTPUT_DIR}" >&2; exit 3; fi
 
-J1_CHECKPOINT="$("${PYTHON_BIN}" - "${J_CHECKPOINT_MAP}" <<'PY'
+J1_CHECKPOINT=""
+case "${MODE}" in
+  treatment|mad|counterfactual)
+    J1_CHECKPOINT="$("${PYTHON_BIN}" - "${J_CHECKPOINT_MAP}" <<'PY'
 import json, sys
 print(json.load(open(sys.argv[1], encoding="utf-8"))["j1_bandwise_noise_calibrated"])
 PY
 )"
+    ;;
+esac
 cd "${PROJECT_ROOT}"
 COMMON_ARGS=(--dataset-dir "${DATASET_DIR}" --dataset-name "${DATASET}" --split "${SPLIT}" --phase1-root "${PHASE1_ROOT}" --device cuda:0 --output-dir "${OUTPUT_DIR}")
 set +e

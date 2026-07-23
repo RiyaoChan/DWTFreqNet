@@ -153,6 +153,46 @@ def test_gate_formula():
     return {"alpha": processor.alpha.tolist(), "rho": float(processor.rho)}
 
 
+def test_spatial_dose_override():
+    processor = DoseCalibratedBandPurifier(
+        5, protection_enabled=False, learnable_alpha=False, fixed_alpha=1.0
+    ).eval()
+    bands = tuple(torch.randn(1, 5, 9, 11) for _ in range(3))
+    with torch.no_grad():
+        full = processor(*bands, alpha_override=1.0)
+        override = torch.full((1, 1, 9, 11), -1.0)
+        override[:, :, 4, 5] = 0.0
+        local = processor(
+            *bands,
+            alpha_override=1.0,
+            spatial_dose_override={band: override for band in "HVD"},
+        )
+    center_differences = {}
+    outside_differences = {}
+    for index, band in enumerate("HVD"):
+        item = local[-1]["bands"][band]
+        assert float(item["dose"][0, 0, 4, 5]) == 0.0
+        torch.testing.assert_close(
+            local[index][:, :, 4, 5], bands[index][:, :, 4, 5], rtol=0, atol=0
+        )
+        mask = torch.ones((9, 11), dtype=torch.bool)
+        mask[4, 5] = False
+        torch.testing.assert_close(
+            local[index][:, :, mask], full[index][:, :, mask], rtol=1e-6, atol=1e-7
+        )
+        center_differences[band] = maximum_difference(
+            local[index][:, :, 4, 5], full[index][:, :, 4, 5]
+        )
+        outside_differences[band] = maximum_difference(
+            local[index][:, :, mask], full[index][:, :, mask]
+        )
+        assert center_differences[band] > 0.0
+    return {
+        "center_difference": center_differences,
+        "outside_difference": outside_differences,
+    }
+
+
 def test_architecture():
     counts = {}
     expected_sources = {
@@ -260,6 +300,33 @@ def test_strict_regressions(device, size):
     return result
 
 
+def test_decoder_low_causal_source(device, size):
+    model = build_k("k3_gr_raw_all", device=device).eval()
+    model.debug_tensors = True
+    model.k_source_map = {stage: "decoder_low" for stage in range(1, 5)}
+    model.rho_override = 0.25
+    sample = torch.randn(1, 1, size, size, device=device)
+    with torch.no_grad():
+        model(sample)
+    result = {}
+    for stage in range(1, 5):
+        debug = model.last_debug["decoder_k"][stage]
+        expected = (
+            model.last_debug["E"][4]
+            if stage == 4
+            else model.last_debug["L"][stage]
+        )
+        assert debug["prior_source"] == "decoder_low"
+        assert debug["prior_low"] is not None
+        torch.testing.assert_close(debug["prior_low"], expected, rtol=0, atol=0)
+        assert debug["prior_low"].shape[1] == K_STAGE_CHANNELS[stage]
+        result[f"stage{stage}"] = list(debug["prior_low"].shape)
+    del model, sample
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+    return result
+
+
 def assert_gradient(model, fragment):
     gradients = [
         parameter.grad for name, parameter in model.named_parameters()
@@ -357,6 +424,7 @@ def main():
         "offsets": test_offsets(args.phase1_root),
         "compactness": test_compactness_and_stop_gradient(),
         "gate": test_gate_formula(),
+        "spatial_dose_override": test_spatial_dose_override(),
         "parameter_counts": test_architecture(),
         "status": "construction_passed",
     }
@@ -367,6 +435,9 @@ def main():
         size = 256 if args.full else 64
         payload["device"] = str(device)
         payload["strict_regressions"] = test_strict_regressions(device, size)
+        payload["decoder_low_causal_source"] = test_decoder_low_causal_source(
+            device, size
+        )
         payload["variants"] = {}
         for variant in FORMAL_VARIANTS:
             payload["variants"][variant] = {
