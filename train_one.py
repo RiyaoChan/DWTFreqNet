@@ -15,7 +15,11 @@ from torch.utils.tensorboard import SummaryWriter
 from dataset import TestSetLoader, TrainSetLoader
 from model.Config import get_DWTFreqNet_config
 from model.DWTFreqNet import AWGM_VARIANTS, DWTFreqNet
+from model.DWTFreqNet_WULLE import DWTFreqNet_WULLE, MODEL_BASE_COMMIT
 from utils import get_optimizer
+
+
+MODEL_VARIANTS = ("dwtfreqnet_original", "dwtfreqnet_wulle_a")
 
 
 def parse_args():
@@ -23,6 +27,12 @@ def parse_args():
     parser.add_argument("--dataset-name", required=True)
     parser.add_argument("--dataset-dir", required=True)
     parser.add_argument("--output-dir", default="./runs/default")
+    parser.add_argument(
+        "--model-variant",
+        default="dwtfreqnet_original",
+        choices=MODEL_VARIANTS,
+        help="Use the unchanged baseline or isolated Experiment-A WULLE branch",
+    )
     parser.add_argument("--epochs", type=int, default=1000)
     parser.add_argument(
         "--stop-after-epoch",
@@ -130,6 +140,30 @@ def collect_awgm_statistics(model):
     }
 
 
+def build_model(args, mode):
+    model_class = (
+        DWTFreqNet
+        if args.model_variant == "dwtfreqnet_original"
+        else DWTFreqNet_WULLE
+    )
+    model = model_class(
+        get_DWTFreqNet_config(),
+        mode=mode,
+        deepsuper=True,
+        awgm_variant=args.awgm_variant,
+        awgm_allow_fallback=args.awgm_allow_fallback,
+    )
+    if args.model_variant == "dwtfreqnet_original":
+        model.model_variant = "dwtfreqnet_original"
+        model.model_base_commit = MODEL_BASE_COMMIT
+        model.experiment_metadata = {
+            "model_variant": model.model_variant,
+            "model_base_commit": model.model_base_commit,
+            "local_branch": "nested_dense",
+        }
+    return model
+
+
 class Metrics:
     """Metrics at one fixed threshold, matching the repository's definitions."""
 
@@ -203,6 +237,7 @@ def evaluate(model, loader, device, threshold):
     criterion = nn.BCELoss()
     losses = []
     awgm_statistics = []
+    wulle_statistics = []
     with torch.no_grad():
         for image, target, size, _ in loader:
             image = image.to(device, non_blocking=True)
@@ -211,6 +246,9 @@ def evaluate(model, loader, device, threshold):
             current_statistics = collect_awgm_statistics(model)
             if current_statistics:
                 awgm_statistics.append(current_statistics)
+            current_wulle_statistics = getattr(model, "last_wulle_statistics", None)
+            if current_wulle_statistics:
+                wulle_statistics.append(dict(current_wulle_statistics))
             height, width = int(size[0]), int(size[1])
             output = output[:, :, :height, :width]
             target = target[:, :, :height, :width]
@@ -222,6 +260,11 @@ def evaluate(model, loader, device, threshold):
         for key in awgm_statistics[0]:
             result[key] = float(np.mean([
                 statistics[key] for statistics in awgm_statistics
+            ]))
+    if wulle_statistics:
+        for key in wulle_statistics[0]:
+            result[key] = float(np.mean([
+                statistics[key] for statistics in wulle_statistics
             ]))
     model.train()
     return result
@@ -306,6 +349,18 @@ def checkpoint_state_dict(checkpoint, model):
     )
 
 
+def validate_checkpoint_model_variant(checkpoint, requested_variant, path):
+    checkpoint_args = checkpoint.get("args", {}) if isinstance(checkpoint, dict) else {}
+    checkpoint_variant = checkpoint_args.get("model_variant")
+    if checkpoint_variant is None:
+        checkpoint_variant = "dwtfreqnet_original"
+    if checkpoint_variant != requested_variant:
+        raise RuntimeError(
+            f"Checkpoint model variant mismatch for {path}: checkpoint uses "
+            f"'{checkpoint_variant}', but --model-variant is '{requested_variant}'."
+        )
+
+
 def main():
     args = parse_args()
     if not torch.cuda.is_available():
@@ -325,14 +380,9 @@ def main():
     if args.eval_only:
         if not args.checkpoint:
             raise ValueError("--checkpoint is required with --eval-only")
-        model = DWTFreqNet(
-            get_DWTFreqNet_config(),
-            mode="test",
-            deepsuper=True,
-            awgm_variant=args.awgm_variant,
-            awgm_allow_fallback=args.awgm_allow_fallback,
-        ).to(device)
+        model = build_model(args, mode="test").to(device)
         checkpoint = torch.load(args.checkpoint, map_location=device, weights_only=True)
+        validate_checkpoint_model_variant(checkpoint, args.model_variant, args.checkpoint)
         model.load_state_dict(checkpoint_state_dict(checkpoint, model))
         result = evaluate(model, test_loader, device, args.threshold)
         print(json.dumps(result, indent=2), flush=True)
@@ -352,13 +402,7 @@ def main():
         pin_memory=True,
     )
 
-    model = DWTFreqNet(
-        get_DWTFreqNet_config(),
-        mode="train",
-        deepsuper=True,
-        awgm_variant=args.awgm_variant,
-        awgm_allow_fallback=args.awgm_allow_fallback,
-    ).to(device)
+    model = build_model(args, mode="train").to(device)
     model.apply(init_weights)
     total_parameters = sum(parameter.numel() for parameter in model.parameters())
     awgm_parameters = sum(
@@ -368,6 +412,8 @@ def main():
     )
     run_config = {
         "dataset": args.dataset_name,
+        "model_variant": args.model_variant,
+        **model.experiment_metadata,
         "seed": args.seed,
         "epochs": args.epochs,
         "stop_after_epoch": args.stop_after_epoch,
@@ -406,6 +452,7 @@ def main():
         checkpoint = torch.load(
             resume_path, map_location=device, weights_only=False
         )
+        validate_checkpoint_model_variant(checkpoint, args.model_variant, resume_path)
         model.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         load_scheduler_state_dict(scheduler, checkpoint["scheduler"])
@@ -418,6 +465,7 @@ def main():
         json.dumps(
             {
                 "dataset": args.dataset_name,
+                "model_variant": args.model_variant,
                 "train_images": len(train_set),
                 "test_images": len(test_set),
                 "device": torch.cuda.get_device_name(0),

@@ -1,3 +1,36 @@
+## Experiment A v2: isolated WULLE local branch
+
+`model/DWTFreqNet_WULLE.py` adds the Wavelet U-Net Local-frequency Learning
+Encoder/decoder branch without changing `model/DWTFreqNet.py`. Select it with
+`train_one.py --model-variant dwtfreqnet_wulle_a`; use
+`dwtfreqnet_original` for the baseline. The protocol, commands and live experiment
+table are recorded in `EXPERIMENT_A_WULLE_V2_RECORD.md`.
+
+## Experiment B: single decoder directional pyramid
+
+`model/DWTFreqNet_SingleDecoder.py` isolates a four-DWT/four-IDWT architecture
+with one wavelet decoder. Its `sd_raw`, `sd_awgm`, `sd_pyramid`, and `sd_full`
+variants are trained through `train_experiment_b.py`; protocol and live results
+are recorded in `EXPERIMENT_B_SINGLE_DECODER_RECORD.md`.
+
+## Experiment E: LFSS-preconditioned AWGM encoder
+
+`model/DWTFreqNet_SingleDecoder_LFSS_AWGM.py` adds one original Wave-Mamba
+LFSSBlock before each stage-wise AWGM while preserving raw H/V/D coefficients
+and the single wavelet decoder. E1 retains the original post-AWGM Res_block;
+E2 replaces it with a fixed Conv1x1-BN-GELU transition. The Chinese protocol,
+validation, complexity, queue and live results are recorded in
+`EXPERIMENT_E_LFSS_AWGM_RECORD.md`.
+
+## Experiment H: E1 decoder LFP purification
+
+`model/DWTFreqNet_SingleDecoder_LFSS_AWGM_DecoderLFP.py` keeps the E1 encoder
+and decoder body fixed and purifies aligned raw H/V/D immediately before all
+four decoder IDWT stages. Six formal variants compare raw-LL versus decoder-low
+attention sources and attention-only, fixed-Gaussian, or adaptive-Gaussian
+purification. The Chinese design, validation, complexity and live 18-task queue
+are recorded in `EXPERIMENT_H_DECODER_LFP_RECORD.md`.
+
 <div align="center">
   
 <h1><span style="font-size:2em;">🔴</span> Infrared Small Target Detection via Wavelet-Driven Frequency Matching and Saliency-Difference Optimization</h1>
@@ -168,6 +201,11 @@ bash scripts/run_w8m_stage1_dataset.sh \
 
 The server-side baseline, full, ablation, and pretrained-weight evaluation
 results are summarized in [EXPERIMENT_RECORD.md](EXPERIMENT_RECORD.md).
+
+Experiment J adds a strictly isolated dual-evidence noise-calibrated
+purification (DENP) study on the fixed E1 model. Its implementation, 15-task
+training matrix, tests, profiling protocol, and current results are documented
+in [EXPERIMENT_J_DENP_RECORD.md](EXPERIMENT_J_DENP_RECORD.md).
 
 ---
 
