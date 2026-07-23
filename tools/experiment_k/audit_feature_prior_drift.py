@@ -86,14 +86,20 @@ def gradient_audit():
 
     detached = low.detach().clone().requires_grad_(True)
     protection_detached, _ = square(detached.detach())
-    detached_square = None if not protection_detached.requires_grad else "unexpected_grad_path"
+    detached_square_gradient = torch.autograd.grad(
+        protection_detached.mean(), detached, allow_unused=True
+    )[0]
 
     radial_source = torch.randn(2, 8, 17, 17, requires_grad=True)
     radial = GaussianRadialCompactness()
     radial_protection, _ = radial(radial_source)
     return {
         "square_normal_low_gradient_norm": normal_square,
-        "square_detached_low_gradient": detached_square,
+        "square_detached_output_requires_grad": bool(protection_detached.requires_grad),
+        "square_detached_low_gradient_norm": (
+            None if detached_square_gradient is None else float(detached_square_gradient.norm())
+        ),
+        "square_detached_output_gradient_source": "compactness_parameters_only",
         "gaussian_radial_output_requires_grad": bool(radial_protection.requires_grad),
         "gaussian_radial_low_gradient": None,
         "formal_k_uses_stop_gradient": True,
